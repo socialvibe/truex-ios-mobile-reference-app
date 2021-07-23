@@ -43,6 +43,7 @@ BOOL _inAdBreak = NO;
 
 - (void)viewWillDisappear:(BOOL)animated {
     [self resetActiveAdRenderer];
+    self.videoMap = nil;
 }
 
 - (BOOL)prefersHomeIndicatorAutoHidden {
@@ -91,6 +92,7 @@ BOOL _inAdBreak = NO;
     BOOL isTruexAd = [[firstAd objectForKey:@"system"] isEqualToString:@"truex"];
     if (isTruexAd) {
         [self.player pause];
+        [self resetActiveAdRenderer];
         // TrueX Flow
         NSString* slotType = (CMTimeGetSeconds(self.player.currentTime) == 0) ? @"PREROLL" : @"MIDROLL";
         self.activeAdRenderer = [[TruexAdRenderer alloc] initWithUrl:@"https://media.truex.com/placeholder.js"
@@ -178,6 +180,8 @@ BOOL _inAdBreak = NO;
 
 // Simulating video server call
 - (void)fetchVmapFromServer {
+    _inAdBreak = NO;
+    
     // Fetch the xml from server
     // NSXMLParser *xmlparser = [[NSXMLParser alloc] initWithContentsOfURL:[[NSURL alloc] initWithString:@""]];
     
