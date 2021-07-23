@@ -1,1 +1,1 @@
-# truex-ios-reference-app
+# truex-ios-mobile-reference-app
