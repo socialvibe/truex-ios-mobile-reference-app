@@ -57,7 +57,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		2706A26626A8A05300395986 /* truex-ios-mobile-reference-app.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "truex-ios-mobile-reference-app.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		2706A26626A8A05300395986 /* true[VISION].app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "true[VISION].app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2706A26926A8A05300395986 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		2706A26A26A8A05300395986 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		2706A26C26A8A05300395986 /* SceneDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SceneDelegate.h; sourceTree = "<group>"; };
@@ -137,7 +137,7 @@
 		2706A26726A8A05300395986 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				2706A26626A8A05300395986 /* truex-ios-mobile-reference-app.app */,
+				2706A26626A8A05300395986 /* true[VISION].app */,
 				2706A28126A8A05500395986 /* truex-ios-mobile-reference-appTests.xctest */,
 				2706A28C26A8A05500395986 /* truex-ios-mobile-reference-appUITests.xctest */,
 			);
@@ -238,7 +238,7 @@
 			);
 			name = "truex-ios-mobile-reference-app";
 			productName = "truex-ios-mobile-reference-app";
-			productReference = 2706A26626A8A05300395986 /* truex-ios-mobile-reference-app.app */;
+			productReference = 2706A26626A8A05300395986 /* true[VISION].app */;
 			productType = "com.apple.product-type.application";
 		};
 		2706A28026A8A05500395986 /* truex-ios-mobile-reference-appTests */ = {
@@ -645,7 +645,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.truex.truex-ios-mobile-reference-app";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "true[VISION]";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -663,7 +663,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.truex.truex-ios-mobile-reference-app";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "true[VISION]";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;

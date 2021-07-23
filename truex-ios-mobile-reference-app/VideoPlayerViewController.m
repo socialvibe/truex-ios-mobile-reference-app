@@ -12,8 +12,11 @@
 
 @interface VideoPlayerViewController ()
 
-@property NSMutableDictionary* videoMap;
 @property TruexAdRenderer* activeAdRenderer;
+
+// internal state for the fake ad manager
+@property NSMutableDictionary* videoMap;
+@property NSMutableDictionary* macros;
 
 @end
 
@@ -36,9 +39,7 @@ BOOL _inAdBreak = NO;
 }
 
 - (void)viewDidAppear:(BOOL)animated {
-    if (self.videoMap == nil) {
-        [self fetchVmapFromServer];
-    }
+    [self fetchVmapFromServer];
 }
 
 - (void)viewWillDisappear:(BOOL)animated {
@@ -180,7 +181,15 @@ BOOL _inAdBreak = NO;
 
 // Simulating video server call
 - (void)fetchVmapFromServer {
+    if (self.videoMap != nil) {
+        return;
+    }
     _inAdBreak = NO;
+    NSUUID *uuid = [NSUUID UUID];
+    if (self.macros == nil) {
+        self.macros = [@{} mutableCopy];
+    }
+    [self.macros setValue:[uuid UUIDString] forKey:@"stream_id"];
     
     // Fetch the xml from server
     // NSXMLParser *xmlparser = [[NSXMLParser alloc] initWithContentsOfURL:[[NSURL alloc] initWithString:@""]];
@@ -331,6 +340,12 @@ BOOL _inAdBreak = NO;
         [[self.videoMap valueForKey:@"adbreaks"] addObject:adbreak];
     } else if ([elementName isEqualToString:@"ad"]) {
         NSMutableDictionary* ad = [attributeDict mutableCopy];
+        NSString* url = [ad objectForKey:@"url"];
+        if (url) {
+            NSString* streamId = [self.macros objectForKey:@"stream_id"];
+            url = [url stringByReplacingOccurrencesOfString:@"[stream_id]" withString:streamId];
+            [ad setValue:url forKey:@"url"];
+        }
         NSMutableArray* adbreaks = [self.videoMap valueForKey:@"adbreaks"];
         NSMutableDictionary* adbreak = [adbreaks objectAtIndex:([adbreaks count] - 1)];
         [[adbreak valueForKey:@"ads"] addObject:ad];
