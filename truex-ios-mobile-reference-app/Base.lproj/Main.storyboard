@@ -111,20 +111,35 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <wkWebView contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="h3O-WW-fyp">
-                                <rect key="frame" x="0.0" y="44" width="414" height="818"/>
+                                <rect key="frame" x="0.0" y="88" width="414" height="774"/>
                                 <color key="backgroundColor" red="0.36078431370000003" green="0.38823529410000002" blue="0.4039215686" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <wkWebViewConfiguration key="configuration">
                                     <audiovisualMediaTypes key="mediaTypesRequiringUserActionForPlayback" none="YES"/>
                                     <wkPreferences key="preferences"/>
                                 </wkWebViewConfiguration>
                             </wkWebView>
+                            <navigationBar contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="2LK-MU-QnW">
+                                <rect key="frame" x="0.0" y="44" width="414" height="44"/>
+                                <items>
+                                    <navigationItem id="bkA-zR-TGe">
+                                        <barButtonItem key="leftBarButtonItem" title="Back" id="RP3-st-iVZ">
+                                            <connections>
+                                                <action selector="onBackClicked:" destination="Ngq-Uc-XWN" id="coZ-wK-fBi"/>
+                                            </connections>
+                                        </barButtonItem>
+                                    </navigationItem>
+                                </items>
+                            </navigationBar>
                         </subviews>
                         <color key="backgroundColor" systemColor="systemBackgroundColor" cocoaTouchSystemColor="whiteColor"/>
                         <constraints>
-                            <constraint firstItem="h3O-WW-fyp" firstAttribute="centerY" secondItem="QI5-mW-zwD" secondAttribute="centerY" id="5ws-qh-EAw"/>
+                            <constraint firstItem="h3O-WW-fyp" firstAttribute="top" secondItem="2LK-MU-QnW" secondAttribute="bottom" id="Di0-LV-air"/>
+                            <constraint firstItem="2LK-MU-QnW" firstAttribute="leading" secondItem="QI5-mW-zwD" secondAttribute="leading" id="Geo-fD-7Jf"/>
                             <constraint firstItem="h3O-WW-fyp" firstAttribute="width" secondItem="QI5-mW-zwD" secondAttribute="width" id="JIH-Vb-wqn"/>
+                            <constraint firstItem="2LK-MU-QnW" firstAttribute="width" secondItem="juE-YL-yQI" secondAttribute="width" id="ZC5-Ki-2GO"/>
+                            <constraint firstItem="QI5-mW-zwD" firstAttribute="bottom" secondItem="h3O-WW-fyp" secondAttribute="bottom" id="bF1-Hz-bVB"/>
                             <constraint firstItem="h3O-WW-fyp" firstAttribute="centerX" secondItem="QI5-mW-zwD" secondAttribute="centerX" id="bnG-yb-5hZ"/>
-                            <constraint firstItem="h3O-WW-fyp" firstAttribute="height" secondItem="QI5-mW-zwD" secondAttribute="height" id="koF-Fr-CMN"/>
+                            <constraint firstItem="2LK-MU-QnW" firstAttribute="top" secondItem="QI5-mW-zwD" secondAttribute="top" id="cUy-oy-BwZ"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="QI5-mW-zwD"/>
                     </view>
@@ -134,7 +149,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Bev-wC-0J9" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="2217" y="138"/>
+            <point key="canvasLocation" x="2215.9420289855075" y="137.94642857142856"/>
         </scene>
     </scenes>
     <resources>

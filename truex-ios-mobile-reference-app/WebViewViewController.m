@@ -22,17 +22,9 @@
     if (self.url) {
         NSURLRequest* request = [[NSURLRequest alloc] initWithURL:self.url];
         [self.mainWebView loadRequest:request];
+        self.url = nil;
     }
 }
-//
-//- (void)viewWillDisappear:(BOOL)animated {
-//    [super viewWillDisappear:animated];
-//    if (self.isBeingDismissed) {
-//        if (self.onDismiss) {
-//            self.onDismiss();
-//        }
-//    }
-//}
 
 - (void)viewDidDisappear:(BOOL)animated {
     [super viewDidDisappear:animated];
@@ -42,14 +34,9 @@
         }
     }
 }
-/*
-#pragma mark - Navigation
 
-// In a storyboard-based application, you will often want to do a little preparation before navigation
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    // Get the new view controller using [segue destinationViewController].
-    // Pass the selected object to the new view controller.
+- (IBAction)onBackClicked:(id)sender {
+    [self dismissViewControllerAnimated:YES completion:nil];
 }
-*/
 
 @end

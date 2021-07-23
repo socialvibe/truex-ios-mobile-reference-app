@@ -17,6 +17,7 @@
 
 @end
 
+// internal state for the fake ad manager
 BOOL _inAdBreak = NO;
 
 @implementation VideoPlayerViewController
@@ -82,7 +83,6 @@ BOOL _inAdBreak = NO;
 - (void)adBreakStarted {
     NSLog(@"VideoLifeCycle: Ad Break Started");
 //    self.requiresLinearPlayback = YES;
-    _inAdBreak = YES;
     
     NSDictionary* currentAdBreak = [self currentAdBreak];
     NSArray* ads = [currentAdBreak objectForKey:@"ads"];
@@ -107,7 +107,6 @@ BOOL _inAdBreak = NO;
 - (void)adBreakEnded {
     NSLog(@"VideoLifeCycle: Ad Break Ended");
 //    self.requiresLinearPlayback = NO;
-    _inAdBreak = NO;
 }
 
 // MARK: - TRUEX DELEGATE METHODS
@@ -136,7 +135,7 @@ BOOL _inAdBreak = NO;
 - (void)onAdFreePod {
     NSLog(@"truex: onAdFreePod");
     [self seekOverCurrentAdBreak];
-    [self adBreakEnded];
+    [self helperEndAdBreak];
 }
 
 - (void)onPopupWebsite:(NSString *)url {
@@ -191,7 +190,7 @@ BOOL _inAdBreak = NO;
         
         // The Boundary Time Observer doesn't like 0s, thus I am firing these event manually. Your video/ad framework should already handle these
         [self videoStarted];
-        [self adBreakStarted];
+        [self helperStartAdBreak];
     } else {
         [self alertWithTitle:@"Error" message:@"Failed to fetch vmap." completion:nil];
     }
@@ -224,7 +223,7 @@ BOOL _inAdBreak = NO;
                                            queue:dispatch_get_main_queue()
                                       usingBlock:^{
                                           // Use weak reference to self
-                                          [weakSelf adBreakStarted];
+                                          [weakSelf helperStartAdBreak];
                                       }];
     
     // Ad Break End Event
@@ -232,7 +231,7 @@ BOOL _inAdBreak = NO;
                                            queue:dispatch_get_main_queue()
                                       usingBlock:^{
                                           // Use weak reference to self
-                                          [weakSelf adBreakEnded];
+                                          [weakSelf helperEndAdBreak];
                                       }];
     
     // Video Start Event
@@ -263,9 +262,9 @@ BOOL _inAdBreak = NO;
                 [weakSelf.player seekToTime:CMTimeMake(timeOffset, 1)];
                 // Boundary Time Observer won't fire for time 0, thus, hardcoding here
                 // Your ad framework would had handled this
-                if (timeOffset == 0){
-                    [weakSelf adBreakStarted];
-                }
+                [weakSelf helperStartAdBreak];
+            } else {
+                _inAdBreak = NO;
             }
         }
     }];
@@ -281,6 +280,21 @@ BOOL _inAdBreak = NO;
         }
     }
     return nil;
+}
+
+- (void)helperStartAdBreak {
+    if (!_inAdBreak) {
+        _inAdBreak = YES;
+        [self adBreakStarted];
+    }
+}
+
+- (void)helperEndAdBreak {
+    if (_inAdBreak) {
+        _inAdBreak = NO;
+        [self adBreakEnded];
+    }
+    
 }
 
 - (void)seekOverFirstAd {

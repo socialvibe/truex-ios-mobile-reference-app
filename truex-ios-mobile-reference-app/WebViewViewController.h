@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface WebViewViewController : UIViewController
 
-@property NSURL* url;
+@property (nullable)NSURL* url;
 @property (nonatomic, copy, nullable) void (^onDismiss)(void);
 
 @end
