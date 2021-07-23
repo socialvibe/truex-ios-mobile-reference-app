@@ -230,6 +230,7 @@
 				2706A26226A8A05300395986 /* Sources */,
 				2706A26326A8A05300395986 /* Frameworks */,
 				2706A26426A8A05300395986 /* Resources */,
+				6A7873C62C605BF66E2040DD /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -360,6 +361,30 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		6A7873C62C605BF66E2040DD /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${SRCROOT}/Pods/Target Support Files/Pods-truex-ios-mobile-reference-app/Pods-truex-ios-mobile-reference-app-frameworks.sh",
+				"${PODS_ROOT}/TruexAdRenderer-iOS/TruexAdRenderer-iOS-v3.2.2/TruexAdRenderer.framework",
+				"${PODS_ROOT}/TruexAdRenderer-iOS/TruexAdRenderer-iOS-v3.2.2/TruexAdRenderer.framework.dSYM",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/TruexAdRenderer.framework",
+				"${DWARF_DSYM_FOLDER_PATH}/TruexAdRenderer.framework.dSYM",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-truex-ios-mobile-reference-app/Pods-truex-ios-mobile-reference-app-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 		9B8802203B57F05525439E04 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
