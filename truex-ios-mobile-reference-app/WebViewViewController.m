@@ -18,7 +18,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    // Do any additional setup after loading the view.
+    
     if (self.url) {
         NSURLRequest* request = [[NSURLRequest alloc] initWithURL:self.url];
         [self.mainWebView loadRequest:request];

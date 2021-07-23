@@ -42,11 +42,11 @@ BOOL _inAdBreak = NO;
 }
 
 - (void)viewWillDisappear:(BOOL)animated {
-//    [self resetActiveAdRenderer];
+    [self resetActiveAdRenderer];
 }
 
 - (BOOL)prefersHomeIndicatorAutoHidden {
-   return (self.activeAdRenderer != nil);
+    return (self.activeAdRenderer != nil);
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -128,7 +128,7 @@ BOOL _inAdBreak = NO;
 
 - (void)onNoAdsAvailable {
     NSLog(@"truex: onNoAdsAvailable");
-    //    [self resetActiveAdRenderer];
+    [self resetActiveAdRenderer];
     [self.player play];
 }
 
@@ -178,11 +178,14 @@ BOOL _inAdBreak = NO;
 
 // Simulating video server call
 - (void)fetchVmapFromServer {
+    // Fetch the xml from server
     // NSXMLParser *xmlparser = [[NSXMLParser alloc] initWithContentsOfURL:[[NSURL alloc] initWithString:@""]];
+    
+    // Or use the hardcoded copy
     NSData* vmapData = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"vmap" ofType:@"xml"]];
     NSXMLParser *xmlparser = [[NSXMLParser alloc] initWithData:vmapData];
-    [xmlparser setDelegate:self];
     
+    [xmlparser setDelegate:self];
     BOOL success = [xmlparser parse];
     if (success) {
         [self setupStream];
@@ -222,7 +225,6 @@ BOOL _inAdBreak = NO;
     [self.player addBoundaryTimeObserverForTimes:adBreakStartTimes
                                            queue:dispatch_get_main_queue()
                                       usingBlock:^{
-                                          // Use weak reference to self
                                           [weakSelf helperStartAdBreak];
                                       }];
     
@@ -230,7 +232,6 @@ BOOL _inAdBreak = NO;
     [self.player addBoundaryTimeObserverForTimes:adBreakEndTimes
                                            queue:dispatch_get_main_queue()
                                       usingBlock:^{
-                                          // Use weak reference to self
                                           [weakSelf helperEndAdBreak];
                                       }];
     
@@ -238,7 +239,6 @@ BOOL _inAdBreak = NO;
     [self.player addBoundaryTimeObserverForTimes:@[@0]
                                            queue:dispatch_get_main_queue()
                                       usingBlock:^{
-                                          // Use weak reference to self
                                           [weakSelf videoStarted];
                                       }];
     // Video End Event
@@ -250,14 +250,14 @@ BOOL _inAdBreak = NO;
                                           [weakSelf videoEnded];
                                       }];
     
-    // Snap Video Position back to the beginning of Ad Break
     [self.player addPeriodicTimeObserverForInterval:CMTimeMakeWithSeconds(0.5, NSEC_PER_SEC)
                                               queue:dispatch_get_main_queue()
                                          usingBlock:^(CMTime time) {
-        if ( weakSelf.player.rate != 0) {
+        if (weakSelf.player.rate != 0) {
             NSDictionary* currentAdBreak = [weakSelf currentAdBreak];
             if (currentAdBreak != nil) {
                 if (!_inAdBreak) {
+                    // Snap Video Position back to the beginning of Ad Break
                     NSDictionary* currentAdBreak = [weakSelf currentAdBreak];
                     int timeOffset = [[currentAdBreak valueForKey:@"timeOffset"] intValue];
                     [weakSelf.player seekToTime:CMTimeMake(timeOffset, 1)];
@@ -266,6 +266,7 @@ BOOL _inAdBreak = NO;
                     [weakSelf helperStartAdBreak];
                 }
             } else {
+                // Help fires adBreakEnded event if somehow it was missed
                 [weakSelf helperEndAdBreak];
             }
         }
