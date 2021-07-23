@@ -254,17 +254,19 @@ BOOL _inAdBreak = NO;
     [self.player addPeriodicTimeObserverForInterval:CMTimeMakeWithSeconds(0.5, NSEC_PER_SEC)
                                               queue:dispatch_get_main_queue()
                                          usingBlock:^(CMTime time) {
-        if (!_inAdBreak && weakSelf.player.rate != 0) {
+        if ( weakSelf.player.rate != 0) {
             NSDictionary* currentAdBreak = [weakSelf currentAdBreak];
             if (currentAdBreak != nil) {
-                NSDictionary* currentAdBreak = [weakSelf currentAdBreak];
-                int timeOffset = [[currentAdBreak valueForKey:@"timeOffset"] intValue];
-                [weakSelf.player seekToTime:CMTimeMake(timeOffset, 1)];
-                // Boundary Time Observer won't fire for time 0, thus, hardcoding here
-                // Your ad framework would had handled this
-                [weakSelf helperStartAdBreak];
+                if (!_inAdBreak) {
+                    NSDictionary* currentAdBreak = [weakSelf currentAdBreak];
+                    int timeOffset = [[currentAdBreak valueForKey:@"timeOffset"] intValue];
+                    [weakSelf.player seekToTime:CMTimeMake(timeOffset, 1)];
+                    // Boundary Time Observer won't fire for time 0, thus, hardcoding here
+                    // Your ad framework would had handled this
+                    [weakSelf helperStartAdBreak];
+                }
             } else {
-                _inAdBreak = NO;
+                [weakSelf helperEndAdBreak];
             }
         }
     }];
