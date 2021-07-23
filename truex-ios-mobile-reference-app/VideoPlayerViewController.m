@@ -8,11 +8,12 @@
 
 #import "VideoPlayerViewController.h"
 #import "WebViewViewController.h"
+#import <TruexAdRenderer/TruexAdRenderer.h>
 
 @interface VideoPlayerViewController ()
 
 @property NSMutableDictionary* videoMap;
-//@property TruexAdRenderer* activeAdRenderer;
+@property TruexAdRenderer* activeAdRenderer;
 
 @end
 
@@ -34,28 +35,38 @@ BOOL _inAdBreak = NO;
 }
 
 - (void)viewDidAppear:(BOOL)animated {
-    [self fetchVmapFromServer];
+    if (self.videoMap == nil) {
+        [self fetchVmapFromServer];
+    }
 }
 
 - (void)viewWillDisappear:(BOOL)animated {
 //    [self resetActiveAdRenderer];
 }
 
+- (BOOL)prefersHomeIndicatorAutoHidden {
+   return (self.activeAdRenderer != nil);
+}
+
+- (BOOL)prefersStatusBarHidden {
+    return (self.activeAdRenderer != nil);
+}
+
 - (void)pause {
-    NSLog(@"sunnysideMobile: pausing renderer");
-//    [self.activeAdRenderer pause];
+    NSLog(@"truex: pausing renderer");
+    [self.activeAdRenderer pause];
 }
 
 - (void)resume {
-    NSLog(@"sunnysideMobile: resuming renderer");
-//    [self.activeAdRenderer resume];
+    NSLog(@"truex: resuming renderer");
+    [self.activeAdRenderer resume];
 }
 
 - (void)resetActiveAdRenderer {
-//    if (self.activeAdRenderer) {
-//        [self.activeAdRenderer stop];
-//    }
-//    self.activeAdRenderer = nil;
+    if (self.activeAdRenderer) {
+        [self.activeAdRenderer stop];
+    }
+    self.activeAdRenderer = nil;
 }
 
 // MARK: - Video Life Cycle Callbacks
@@ -79,8 +90,17 @@ BOOL _inAdBreak = NO;
     
     BOOL isTruexAd = [[firstAd objectForKey:@"system"] isEqualToString:@"truex"];
     if (isTruexAd) {
-//        [self.player pause];
+        [self.player pause];
         // TrueX Flow
+        NSString* slotType = (CMTimeGetSeconds(self.player.currentTime) == 0) ? @"PREROLL" : @"MIDROLL";
+        self.activeAdRenderer = [[TruexAdRenderer alloc] initWithUrl:@"https://media.truex.com/placeholder.js"
+                                                        adParameters:@{
+                                                            @"vast_config_url": [firstAd objectForKey:@"url"]
+                                                        }
+                                                            slotType:slotType];
+        self.activeAdRenderer.delegate = self;
+        [self.activeAdRenderer start:self.view];
+        [self seekOverFirstAd];
     }
 }
 
@@ -92,60 +112,67 @@ BOOL _inAdBreak = NO;
 
 // MARK: - TRUEX DELEGATE METHODS
 - (void)onAdStarted:(NSString*)campaignName {
-    NSLog(@"sunnysideMobile: onAdStarted: %@", campaignName);
-    [self seekOverFirstAd];
+    NSLog(@"truex: onAdStarted: %@", campaignName);
 }
 
 - (void)onAdCompleted:(NSInteger)timeSpent {
-    NSLog(@"sunnysideMobile: onAdCompleted: %ld", (long)timeSpent);
-    //    [self resetActiveAdRenderer];
+    NSLog(@"truex: onAdCompleted: %ld", (long)timeSpent);
+    [self resetActiveAdRenderer];
     [self.player play];
 }
 
 - (void)onAdError:(NSString*)errorMessage {
-    NSLog(@"sunnysideMobile: onAdError: %@", errorMessage);
-    //    [self resetActiveAdRenderer];
+    NSLog(@"truex: onAdError: %@", errorMessage);
+    [self resetActiveAdRenderer];
     [self.player play];
 }
 
 - (void)onNoAdsAvailable {
-    NSLog(@"sunnysideMobile: onNoAdsAvailable");
+    NSLog(@"truex: onNoAdsAvailable");
     //    [self resetActiveAdRenderer];
     [self.player play];
 }
 
 - (void)onAdFreePod {
-    NSLog(@"sunnysideMobile: onAdFreePod");
+    NSLog(@"truex: onAdFreePod");
     [self seekOverCurrentAdBreak];
+    [self adBreakEnded];
 }
 
 - (void)onPopupWebsite:(NSString *)url {
-    NSLog(@"sunnysideMobile: onPopupWebsite: %@", url);
-//    [[UIApplication sharedApplication] openURL:[NSURL URLWithString: url] options:@{} completionHandler:nil];
+    NSLog(@"truex: onPopupWebsite: %@", url);
+    // Open the URL in Safari
+    // [[UIApplication sharedApplication] openURL:[NSURL URLWithString: url] options:@{} completionHandler:nil];
     
+    // Or open with your existing in app webview
     UIStoryboard* storyBoard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
     WebViewViewController* newViewController = [storyBoard instantiateViewControllerWithIdentifier:@"webviewVC"];
     newViewController.url = [NSURL URLWithString:url];
     newViewController.modalPresentationStyle = UIModalPresentationPopover;
+    __weak typeof(self) weakSelf = self;
+    newViewController.onDismiss = ^(void) {
+        [weakSelf.activeAdRenderer resume];
+    };
+    [self.activeAdRenderer pause];
     [self presentViewController:newViewController animated:YES completion:nil];
 }
 
 // @optional
 -(void) onOptIn:(NSString*)campaignName adId:(NSInteger)adId {
-    NSLog(@"sunnysideMobile: onOptIn: %@, %li", campaignName, (long)adId);
+    NSLog(@"truex: onOptIn: %@, %li", campaignName, (long)adId);
     
 }
 
 -(void) onOptOut:(BOOL)userInitiated {
-    NSLog(@"sunnysideMobile: userInitiated: %@", userInitiated? @"true": @"false");
+    NSLog(@"truex: userInitiated: %@", userInitiated? @"true": @"false");
 }
 
 -(void) onSkipCardShown {
-    NSLog(@"sunnysideMobile: onSkipCardShown");
+    NSLog(@"truex: onSkipCardShown");
 }
 
 -(void) onUserCancel {
-    NSLog(@"sunnysideMobile: onUserCancel");
+    NSLog(@"truex: onUserCancel");
 }
 
 // MARK: - Helper Functions
@@ -234,6 +261,11 @@ BOOL _inAdBreak = NO;
                 NSDictionary* currentAdBreak = [weakSelf currentAdBreak];
                 int timeOffset = [[currentAdBreak valueForKey:@"timeOffset"] intValue];
                 [weakSelf.player seekToTime:CMTimeMake(timeOffset, 1)];
+                // Boundary Time Observer won't fire for time 0, thus, hardcoding here
+                // Your ad framework would had handled this
+                if (timeOffset == 0){
+                    [weakSelf adBreakStarted];
+                }
             }
         }
     }];

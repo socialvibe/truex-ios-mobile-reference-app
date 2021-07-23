@@ -8,10 +8,11 @@
 
 #import <UIKit/UIKit.h>
 @import AVKit;
+#import <TruexAdRenderer/TruexShared.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface VideoPlayerViewController : AVPlayerViewController<NSXMLParserDelegate>
+@interface VideoPlayerViewController : AVPlayerViewController<TruexAdRendererDelegate, NSXMLParserDelegate>
 
 @end
 

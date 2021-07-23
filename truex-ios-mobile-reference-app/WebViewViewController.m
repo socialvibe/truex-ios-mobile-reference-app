@@ -24,7 +24,24 @@
         [self.mainWebView loadRequest:request];
     }
 }
+//
+//- (void)viewWillDisappear:(BOOL)animated {
+//    [super viewWillDisappear:animated];
+//    if (self.isBeingDismissed) {
+//        if (self.onDismiss) {
+//            self.onDismiss();
+//        }
+//    }
+//}
 
+- (void)viewDidDisappear:(BOOL)animated {
+    [super viewDidDisappear:animated];
+    if (self.isBeingDismissed) {
+        if (self.onDismiss) {
+            self.onDismiss();
+        }
+    }
+}
 /*
 #pragma mark - Navigation
 

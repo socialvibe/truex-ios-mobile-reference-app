@@ -1,0 +1,16 @@
+PODS:
+  - TruexAdRenderer (3.2.2)
+
+DEPENDENCIES:
+  - TruexAdRenderer (from `../TruexAdRenderer-iOS`)
+
+EXTERNAL SOURCES:
+  TruexAdRenderer:
+    :path: "../TruexAdRenderer-iOS"
+
+SPEC CHECKSUMS:
+  TruexAdRenderer: 69c674f8270db75db7699d183e5f6753cad03ae6
+
+PODFILE CHECKSUM: f57f189eafad26a199176f1f784f10f632fcced2
+
+COCOAPODS: 1.5.3
