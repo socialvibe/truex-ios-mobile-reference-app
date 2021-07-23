@@ -84,7 +84,7 @@ BOOL _inAdBreak = NO;
 
 - (void)adBreakStarted {
     NSLog(@"VideoLifeCycle: Ad Break Started");
-//    self.requiresLinearPlayback = YES;
+    self.requiresLinearPlayback = YES;
     
     NSDictionary* currentAdBreak = [self currentAdBreak];
     NSArray* ads = [currentAdBreak objectForKey:@"ads"];
@@ -109,7 +109,7 @@ BOOL _inAdBreak = NO;
 
 - (void)adBreakEnded {
     NSLog(@"VideoLifeCycle: Ad Break Ended");
-//    self.requiresLinearPlayback = NO;
+    self.requiresLinearPlayback = NO;
 }
 
 // MARK: - TRUEX DELEGATE METHODS
