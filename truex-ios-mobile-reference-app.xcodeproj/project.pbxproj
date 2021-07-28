@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 51;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -57,7 +57,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		2706A26626A8A05300395986 /* true[VISION].app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "true[VISION].app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		2706A26626A8A05300395986 /* trueVISION.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = trueVISION.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2706A26926A8A05300395986 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		2706A26A26A8A05300395986 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		2706A26C26A8A05300395986 /* SceneDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SceneDelegate.h; sourceTree = "<group>"; };
@@ -137,7 +137,7 @@
 		2706A26726A8A05300395986 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				2706A26626A8A05300395986 /* true[VISION].app */,
+				2706A26626A8A05300395986 /* trueVISION.app */,
 				2706A28126A8A05500395986 /* truex-ios-mobile-reference-appTests.xctest */,
 				2706A28C26A8A05500395986 /* truex-ios-mobile-reference-appUITests.xctest */,
 			);
@@ -230,6 +230,7 @@
 				2706A26226A8A05300395986 /* Sources */,
 				2706A26326A8A05300395986 /* Frameworks */,
 				2706A26426A8A05300395986 /* Resources */,
+				4D70BE868229C1E4BE417E6D /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -237,7 +238,7 @@
 			);
 			name = "truex-ios-mobile-reference-app";
 			productName = "truex-ios-mobile-reference-app";
-			productReference = 2706A26626A8A05300395986 /* true[VISION].app */;
+			productReference = 2706A26626A8A05300395986 /* trueVISION.app */;
 			productType = "com.apple.product-type.application";
 		};
 		2706A28026A8A05500395986 /* truex-ios-mobile-reference-appTests */ = {
@@ -360,6 +361,23 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		4D70BE868229C1E4BE417E6D /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-truex-ios-mobile-reference-app/Pods-truex-ios-mobile-reference-app-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-truex-ios-mobile-reference-app/Pods-truex-ios-mobile-reference-app-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-truex-ios-mobile-reference-app/Pods-truex-ios-mobile-reference-app-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 		9B8802203B57F05525439E04 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -613,6 +631,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 746G57X93G;
 				INFOPLIST_FILE = "truex-ios-mobile-reference-app/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -620,7 +639,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.truex.truex-ios-mobile-reference-app";
-				PRODUCT_NAME = "trueVISION";
+				PRODUCT_NAME = trueVISION;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -631,6 +650,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 746G57X93G;
 				INFOPLIST_FILE = "truex-ios-mobile-reference-app/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -638,7 +658,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.truex.truex-ios-mobile-reference-app";
-				PRODUCT_NAME = "trueVISION";
+				PRODUCT_NAME = trueVISION;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
