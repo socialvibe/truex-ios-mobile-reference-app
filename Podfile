@@ -11,9 +11,9 @@ target 'truex-ios-mobile-reference-app' do
   # use_frameworks!
 
   # Pods for truex-ios-mobile-reference-app
-  pod 'TruexAdRenderer', :path => "#{LOCAL_TAR_PATH}"
+  # pod 'TruexAdRenderer', :path => "#{LOCAL_TAR_PATH}"
   # pod 'TruexAdRenderer-iOS', :path => "#{LOCAL_TAR_PATH}"
-  # pod 'TruexAdRenderer-iOS', '3.2.2'
+  pod 'TruexAdRenderer-iOS', '3.2.2'
 
   target 'truex-ios-mobile-reference-appTests' do
     inherit! :search_paths
