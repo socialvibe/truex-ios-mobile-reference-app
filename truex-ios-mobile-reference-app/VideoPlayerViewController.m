@@ -192,11 +192,11 @@ BOOL _inAdBreak = NO;
     [self.macros setValue:[uuid UUIDString] forKey:@"stream_id"];
     
     // Fetch the xml from server
-    // NSXMLParser *xmlparser = [[NSXMLParser alloc] initWithContentsOfURL:[[NSURL alloc] initWithString:@""]];
+    NSXMLParser *xmlparser = [[NSXMLParser alloc] initWithContentsOfURL:[[NSURL alloc] initWithString:@"https://stash.truex.com/ios/reference_app/vmap.xml"]];
     
     // Or use the hardcoded copy
-    NSData* vmapData = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"vmap" ofType:@"xml"]];
-    NSXMLParser *xmlparser = [[NSXMLParser alloc] initWithData:vmapData];
+    // NSData* vmapData = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"vmap" ofType:@"xml"]];
+    // NSXMLParser *xmlparser = [[NSXMLParser alloc] initWithData:vmapData];
     
     [xmlparser setDelegate:self];
     BOOL success = [xmlparser parse];
