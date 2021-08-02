@@ -42,7 +42,7 @@ BOOL _inAdBreak = NO;
     [self fetchVmapFromServer];
 }
 
-- (void)viewWillDisappear:(BOOL)animated {
+- (void)viewDidDisappear:(BOOL)animated {
     [self resetActiveAdRenderer];
     self.videoMap = nil;
 }
