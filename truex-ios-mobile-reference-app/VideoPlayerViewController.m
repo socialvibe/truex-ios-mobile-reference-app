@@ -22,6 +22,8 @@
 
 // internal state for the fake ad manager
 BOOL _inAdBreak = NO;
+int _adBreakIndex = 0;
+int _resumeTime = -1;
 
 @implementation VideoPlayerViewController
 
@@ -137,7 +139,13 @@ BOOL _inAdBreak = NO;
 
 - (void)onAdFreePod {
     NSLog(@"truex: onAdFreePod");
-    [self seekOverCurrentAdBreak];
+    if (_resumeTime != -1) {
+        // Custom resume logic for snap back
+        [self.player seekToTime:CMTimeMake(_resumeTime, 1)];
+        _resumeTime = -1;
+    } else {
+        [self seekOverCurrentAdBreak];
+    }
     [self helperEndAdBreak];
 }
 
@@ -185,6 +193,7 @@ BOOL _inAdBreak = NO;
         return;
     }
     _inAdBreak = NO;
+    _adBreakIndex = 0;
     NSUUID *uuid = [NSUUID UUID];
     if (self.macros == nil) {
         self.macros = [@{} mutableCopy];
@@ -279,8 +288,22 @@ BOOL _inAdBreak = NO;
                     [weakSelf helperStartAdBreak];
                 }
             } else {
-                // Help fires adBreakEnded event if somehow it was missed
-                [weakSelf helperEndAdBreak];
+                if (_inAdBreak) {
+                    // Help fires adBreakEnded event if somehow it was missed
+                    [weakSelf helperEndAdBreak];
+                } else {
+                    // snap back to the last ad break if it wasn't played
+                    int currentAdBreakIndex = [weakSelf currentAdBreakIndex];
+                    if (_adBreakIndex != currentAdBreakIndex) {
+                        NSDictionary* currentAdBreak = [weakSelf adBreakAtIndex:currentAdBreakIndex];
+                        _resumeTime = CMTimeGetSeconds(weakSelf.player.currentTime);
+                        int timeOffset = [[currentAdBreak valueForKey:@"timeOffset"] intValue];
+                        [weakSelf.player seekToTime:CMTimeMake(timeOffset, 1)];
+                        // Boundary Time Observer won't fire for time 0, thus, hardcoding here
+                        // Your ad framework would had handled this
+                        [weakSelf helperStartAdBreak];
+                    }
+                }
             }
         }
     }];
@@ -298,6 +321,23 @@ BOOL _inAdBreak = NO;
     return nil;
 }
 
+- (NSDictionary*)adBreakAtIndex:(int)index {
+    return [[self.videoMap objectForKey:@"adbreaks"] objectAtIndex:(NSUInteger)index];
+}
+
+- (int)currentAdBreakIndex {
+    int index = -1;
+    for (NSMutableDictionary* adbreak in [self.videoMap objectForKey:@"adbreaks"]) {
+        int currentTime = CMTimeGetSeconds(self.player.currentTime);
+        int timeOffset = [[adbreak valueForKey:@"timeOffset"] intValue];
+        if (currentTime < timeOffset){
+            return index;
+        }
+        index++;
+    }
+    return index;
+}
+
 - (void)helperStartAdBreak {
     if (!_inAdBreak) {
         _inAdBreak = YES;
@@ -309,6 +349,7 @@ BOOL _inAdBreak = NO;
     if (_inAdBreak) {
         _inAdBreak = NO;
         [self adBreakEnded];
+        _adBreakIndex = [self currentAdBreakIndex];
     }
     
 }
