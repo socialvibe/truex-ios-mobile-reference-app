@@ -95,7 +95,7 @@ BOOL _inAdBreak = NO;
         [self.player pause];
         [self resetActiveAdRenderer];
         // TrueX Flow
-        NSString* slotType = (CMTimeGetSeconds(self.player.currentTime) == 0) ? @"PREROLL" : @"MIDROLL";
+        NSString* slotType = (CMTimeGetSeconds(self.player.currentTime) == 0) ? @"preroll" : @"midroll";
         self.activeAdRenderer = [[TruexAdRenderer alloc] initWithUrl:@"https://media.truex.com/placeholder.js"
                                                         adParameters:@{
                                                             @"vast_config_url": [firstAd objectForKey:@"url"]
