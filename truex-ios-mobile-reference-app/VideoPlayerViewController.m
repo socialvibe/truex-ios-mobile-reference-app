@@ -184,7 +184,7 @@ int _resumeTime = -1;
     [self presentViewController:newViewController animated:YES completion:nil];
 }
 
-// @optional true[X] delegate methods
+// MARK: @optional true[X] delegate methods
 // [5]
 -(void) onOptIn:(NSString*)campaignName adId:(NSInteger)adId {
     // true[X] - This event is triggered when a user decides opt-in to the true[X] interactive ad
@@ -209,7 +209,7 @@ int _resumeTime = -1;
     NSLog(@"truex: onUserCancel");
 }
 
-// MARK: - Helper Functions / Fake Ad Manager
+// MARK: - Helper Functions / Fake Ad Server Call
 
 // Simulating video server call
 - (void)fetchVmapFromServer {

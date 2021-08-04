@@ -5,17 +5,19 @@ Ad Renderer in iOS. This document will step through the various pieces of code t
 the integration work, so that the same basic ideas can be replicated in a real production app.
 
 This reference app covers the essential work. It assumes your app already have a working ad manager.
+
 ~~For a more detailed integration guide, please refer to: https://github.com/socialvibe/truex-mobile-integrations/~~ (OUTDATED)
 
 # Access the true[X] Ad Renderer Library
 
-One can get the true[X] Ad Renderer either by
-[CocoaPods](https://github.com/socialvibe/cocoapod-specs) 
+One can get the true[X] Ad Renderer either by the 
+[non-standard CocoaPods integration](https://guides.cocoapods.org/making/private-cocoapods.html): 
+[TrueX CocoaPods](https://github.com/socialvibe/cocoapod-specs) 
 ```
 source 'https://github.com/socialvibe/cocoapod-specs.git'
 
 target 'your-app' do
-    pod 'TruexAdRenderer-iOS', '3.2.3'
+    pod 'TruexAdRenderer-iOS', '3.2'
 end
 ```
 or direct download and have added to your project appropriately.
@@ -42,5 +44,5 @@ There are three ways the renderer can finish:
 
 In `onCompletion`, note that if the user has gained credit from earlier, we want to skip all the other ad returned in the pod and resume the stream.  Otherwise we need to play the other ads in the pod.  In all three of these cases, the renderer will have removed itself from view.
 
-### [5] - Other delegate method
+### [5] - Other delegate/callback method
 See the code for other ad events that are fired.  Some events are for any custom purposes if needed, otherwise there is nothing the host app is required to do (eg. `onAdStarted`).  The `onPopupWebsite` event is for handling any user interactions that would prompt a pop up.  It is important to pause/resume the ad renderer based off the user actions to preserve proper states when switching to another app, as shown in the code.
