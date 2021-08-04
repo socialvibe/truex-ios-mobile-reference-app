@@ -50,20 +50,21 @@ int _resumeTime = -1;
 }
 
 - (BOOL)prefersHomeIndicatorAutoHidden {
+    // true[X] - Hide home indicator during true[X] Ad
     return (self.activeAdRenderer != nil);
 }
 
 - (BOOL)prefersStatusBarHidden {
+    // true[X] - Hide the status bar during true[X] Ad
     return (self.activeAdRenderer != nil);
 }
 
 - (void)pause {
-    NSLog(@"truex: pausing renderer");
+    // true[X] - Besure to pasue and resume the true[X] Ad Renderer
     [self.activeAdRenderer pause];
 }
 
 - (void)resume {
-    NSLog(@"truex: resuming renderer");
     [self.activeAdRenderer resume];
 }
 
@@ -74,29 +75,29 @@ int _resumeTime = -1;
     self.activeAdRenderer = nil;
 }
 
-// MARK: - Video Life Cycle Callbacks
+// MARK: - Fake Ad Manager's Video Life Cycle Callbacks
 - (void)videoStarted {
-    NSLog(@"VideoLifeCycle: Video Started");
+    NSLog(@"Ad Manager: Video Started");
 }
 
 - (void)videoEnded {
-    NSLog(@"VideoLifeCycle: Video Ended");
+    NSLog(@"Ad Manager: Video Ended");
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 - (void)adBreakStarted {
-    NSLog(@"VideoLifeCycle: Ad Break Started");
+    NSLog(@"Ad Manager: Ad Break Started");
     self.requiresLinearPlayback = YES;
     
+    // [1] - Look for true[X] companions for a given ad
     NSDictionary* currentAdBreak = [self currentAdBreak];
     NSArray* ads = [currentAdBreak objectForKey:@"ads"];
     NSDictionary* firstAd = [ads objectAtIndex:0];
-    
     BOOL isTruexAd = [[firstAd objectForKey:@"system"] isEqualToString:@"truex"];
     if (isTruexAd) {
+        // [2] - Prepare to enter the engagement
         [self.player pause];
         [self resetActiveAdRenderer];
-        // TrueX Flow
         NSString* slotType = (CMTimeGetSeconds(self.player.currentTime) == 0) ? @"preroll" : @"midroll";
         self.activeAdRenderer = [[TruexAdRenderer alloc] initWithUrl:@"https://media.truex.com/placeholder.js"
                                                         adParameters:@{
@@ -105,87 +106,110 @@ int _resumeTime = -1;
                                                             slotType:slotType];
         self.activeAdRenderer.delegate = self;
         [self.activeAdRenderer start:self.view];
+        // true[X] - Seeking over the true[X] ad's placeholder
         [self seekOverFirstAd];
     }
 }
 
 - (void)adBreakEnded {
-    NSLog(@"VideoLifeCycle: Ad Break Ended");
+    NSLog(@"Ad Manager: Ad Break Ended");
     self.requiresLinearPlayback = NO;
 }
 
 // MARK: - TRUEX DELEGATE METHODS
+// [5] - Other delegate method
 - (void)onAdStarted:(NSString*)campaignName {
+    // true[X] - User has started their ad engagement
     NSLog(@"truex: onAdStarted: %@", campaignName);
 }
 
+// [4] - Respond to renderer terminating events
 - (void)onAdCompleted:(NSInteger)timeSpent {
+    // true[X] - User has finished the true[X] engagement, resume the video stream
     NSLog(@"truex: onAdCompleted: %ld", (long)timeSpent);
     [self resetActiveAdRenderer];
     [self.player play];
 }
 
+// [4]
 - (void)onAdError:(NSString*)errorMessage {
+    // true[X] - TruexAdRenderer encountered an error presenting the ad, resume with standard ads
     NSLog(@"truex: onAdError: %@", errorMessage);
     [self resetActiveAdRenderer];
     [self.player play];
 }
 
+// [4]
 - (void)onNoAdsAvailable {
+    // true[X] - TruexAdRenderer has no ads ready to present, resume with standard ads
     NSLog(@"truex: onNoAdsAvailable");
     [self resetActiveAdRenderer];
     [self.player play];
 }
 
+// [3] - Respond to onAdFreePod
 - (void)onAdFreePod {
+    // true[X] - User has met engagement requirements, skips past remaining pod ads
     NSLog(@"truex: onAdFreePod");
-    if (_resumeTime != -1) {
-        // Custom resume logic for snap back
+    if (_resumeTime == -1) {
+        // true[X] - Skipping the whole ad break here as user earn credit from true[X]
+        [self seekOverCurrentAdBreak];
+    } else {
+        // Custom snap back logic, skipping ad break and send user back to their original position
         [self.player seekToTime:CMTimeMake(_resumeTime, 1)];
         _resumeTime = -1;
-    } else {
-        [self seekOverCurrentAdBreak];
     }
     [self helperEndAdBreak];
 }
 
+// [5] - Other delegate method
 - (void)onPopupWebsite:(NSString *)url {
+    // true[X] - User wants to open an external link in the true[X] ad
+
     NSLog(@"truex: onPopupWebsite: %@", url);
     // Open the URL in Safari
     // [[UIApplication sharedApplication] openURL:[NSURL URLWithString: url] options:@{} completionHandler:nil];
     
-    // Or open with your existing in app webview
+    // Or, open with the existing in-app webview
     UIStoryboard* storyBoard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
     WebViewViewController* newViewController = [storyBoard instantiateViewControllerWithIdentifier:@"webviewVC"];
     newViewController.url = [NSURL URLWithString:url];
     newViewController.modalPresentationStyle = UIModalPresentationPopover;
     __weak typeof(self) weakSelf = self;
     newViewController.onDismiss = ^(void) {
+        // true[X] - You will need to pause and remume the true[X] Ad Renderer
         [weakSelf.activeAdRenderer resume];
     };
     [self.activeAdRenderer pause];
     [self presentViewController:newViewController animated:YES completion:nil];
 }
 
-// @optional
+// @optional true[X] delegate methods
+// [5]
 -(void) onOptIn:(NSString*)campaignName adId:(NSInteger)adId {
+    // true[X] - This event is triggered when a user decides opt-in to the true[X] interactive ad
     NSLog(@"truex: onOptIn: %@, %li", campaignName, (long)adId);
-    
 }
 
+// [5]
 -(void) onOptOut:(BOOL)userInitiated {
+    // true[X] - User has opted out of true[X] engagement, show standard ads
     NSLog(@"truex: userInitiated: %@", userInitiated? @"true": @"false");
 }
 
+// [5]
 -(void) onSkipCardShown {
+    // true[X] - TruexAdRenderer displayed a Skip Card
     NSLog(@"truex: onSkipCardShown");
 }
 
+// [5]
 -(void) onUserCancel {
+    // true[X] - This event will fire when a user backs out of the true[X] interactive ad unit after having opted in.
     NSLog(@"truex: onUserCancel");
 }
 
-// MARK: - Helper Functions
+// MARK: - Helper Functions / Fake Ad Manager
 
 // Simulating video server call
 - (void)fetchVmapFromServer {
