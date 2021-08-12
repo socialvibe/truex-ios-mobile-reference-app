@@ -24,6 +24,7 @@
 BOOL _inAdBreak = NO;
 int _adBreakIndex = 0;
 int _resumeTime = -1;
+BOOL _snappingBack = NO;
 
 @implementation VideoPlayerViewController
 
@@ -303,29 +304,42 @@ int _resumeTime = -1;
             NSDictionary* currentAdBreak = [weakSelf currentAdBreak];
             if (currentAdBreak != nil) {
                 if (!_inAdBreak) {
+                    _snappingBack = YES;
                     // Snap Video Position back to the beginning of Ad Break
                     NSDictionary* currentAdBreak = [weakSelf currentAdBreak];
                     int timeOffset = [[currentAdBreak valueForKey:@"timeOffset"] intValue];
-                    [weakSelf.player seekToTime:CMTimeMake(timeOffset, 1)];
-                    // Boundary Time Observer won't fire for time 0, thus, hardcoding here
-                    // Your ad framework would had handled this
-                    [weakSelf helperStartAdBreak];
+                    [weakSelf.player seekToTime:CMTimeMake(timeOffset, 1) completionHandler:^(BOOL finished) {
+                        if (finished) {
+                            // Boundary Time Observer won't fire for time 0, thus, hardcoding here
+                            // Your ad framework would had handled this
+                            [weakSelf helperStartAdBreak];
+                        }
+                    }];
+                } else {
+                    _snappingBack = NO;
                 }
             } else {
                 if (_inAdBreak) {
-                    // Help fires adBreakEnded event if somehow it was missed
-                    [weakSelf helperEndAdBreak];
+                    // Add a flag to avoid trigger adbreak end when we snap back
+                    if (!_snappingBack){
+                        // Help fires adBreakEnded event if somehow it was missed
+                        [weakSelf helperEndAdBreak];
+                    }
                 } else {
                     // snap back to the last ad break if it wasn't played
                     int currentAdBreakIndex = [weakSelf currentAdBreakIndex];
                     if (_adBreakIndex != currentAdBreakIndex) {
+                        _snappingBack = YES;
                         NSDictionary* currentAdBreak = [weakSelf adBreakAtIndex:currentAdBreakIndex];
                         _resumeTime = CMTimeGetSeconds(weakSelf.player.currentTime);
                         int timeOffset = [[currentAdBreak valueForKey:@"timeOffset"] intValue];
-                        [weakSelf.player seekToTime:CMTimeMake(timeOffset, 1)];
-                        // Boundary Time Observer won't fire for time 0, thus, hardcoding here
-                        // Your ad framework would had handled this
-                        [weakSelf helperStartAdBreak];
+                        [weakSelf.player seekToTime:CMTimeMake(timeOffset, 1) completionHandler:^(BOOL finished) {
+                            if (finished) {
+                                // Boundary Time Observer won't fire for time 0, thus, hardcoding here
+                                // Your ad framework would had handled this
+                                [weakSelf helperStartAdBreak];
+                            }
+                        }];
                     }
                 }
             }
