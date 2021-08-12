@@ -10,6 +10,7 @@
 #import <AppTrackingTransparency/AppTrackingTransparency.h>
 
 @interface ViewController ()
+@property (weak, nonatomic) IBOutlet UILabel *infoLabel;
 
 @end
 
@@ -18,6 +19,11 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
+    
+    NSBundle* truexAdRendererBundle = [NSBundle bundleWithIdentifier:@"com.truex.TruexAdRenderer"];
+    NSString* truexAdRendererVersion = [[truexAdRendererBundle infoDictionary] objectForKey:@"CFBundleShortVersionString"];
+    NSLog(@"TruexAdRenderer Version: %@", truexAdRendererVersion);
+    [self.infoLabel setText:[NSString stringWithFormat:@"%@\n\nTruexAdRenderer Version: %@", self.infoLabel.text, truexAdRendererVersion]];
     
     // Optional, request ad tracking
     // See: https://developer.apple.com/documentation/apptrackingtransparency

@@ -100,6 +100,9 @@ preroll at 0s midroll at 577s (9m37s)</string>
                             </mask>
                         </variation>
                     </view>
+                    <connections>
+                        <outlet property="infoLabel" destination="jpS-f8-8VI" id="N7C-zS-83S"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
             </objects>
