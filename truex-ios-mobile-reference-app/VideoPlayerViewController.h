@@ -8,11 +8,12 @@
 
 #import <UIKit/UIKit.h>
 @import AVKit;
+#import <SafariServices/SafariServices.h>
 #import <TruexAdRenderer/TruexShared.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface VideoPlayerViewController : AVPlayerViewController<TruexAdRendererDelegate, NSXMLParserDelegate>
+@interface VideoPlayerViewController : AVPlayerViewController<TruexAdRendererDelegate, NSXMLParserDelegate, SFSafariViewControllerDelegate>
 
 @end
 
