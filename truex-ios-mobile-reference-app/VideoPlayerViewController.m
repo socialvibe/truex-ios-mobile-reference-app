@@ -169,35 +169,36 @@ BOOL _snappingBack = NO;
 
     NSLog(@"truex: onPopupWebsite: %@", url);
     // Open URL with the SFSafariViewController
-    SFSafariViewController *svc = [[SFSafariViewController alloc] initWithURL:[NSURL URLWithString: url]];
-    svc.delegate = self;
-    svc.modalPresentationStyle = UIModalPresentationOverCurrentContext;
-    [self presentViewController:svc animated:YES completion:nil];
-    [self.activeAdRenderer pause];
+    // SFSafariViewController *svc = [[SFSafariViewController alloc] initWithURL:[NSURL URLWithString: url]];
+    // svc.delegate = self;
+    // svc.modalPresentationStyle = UIModalPresentationOverCurrentContext;
+    // [self presentViewController:svc animated:YES completion:nil];
+    // [self.activeAdRenderer pause];
     
     // Or, open the URL directly in Safari
     // [[UIApplication sharedApplication] openURL:[NSURL URLWithString: url] options:@{} completionHandler:nil];
     
     // Or, open with the existing in-app webview
-    // UIStoryboard* storyBoard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
-    // WebViewViewController* newViewController = [storyBoard instantiateViewControllerWithIdentifier:@"webviewVC"];
-    // newViewController.url = [NSURL URLWithString:url];
-    // newViewController.modalPresentationStyle = UIModalPresentationOverCurrentContext;
-    // __weak typeof(self) weakSelf = self;
-    // newViewController.onDismiss = ^(void) {
-    //     // true[X] - You will need to pause and remume the true[X] Ad Renderer
-    //     [weakSelf.activeAdRenderer resume];
-    // };
-    // [self.activeAdRenderer pause];
-    // [self presentViewController:newViewController animated:YES completion:nil];
+     UIStoryboard* storyBoard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
+     WebViewViewController* newViewController = [storyBoard instantiateViewControllerWithIdentifier:@"webviewVC"];
+     newViewController.url = [NSURL URLWithString:url];
+     newViewController.modalPresentationStyle = UIModalPresentationOverCurrentContext;
+     __weak typeof(self) weakSelf = self;
+     newViewController.onDismiss = ^(void) {
+         // true[X] - You will need to pause and remume the true[X] Ad Renderer
+         [weakSelf.activeAdRenderer resume];
+     };
+     [self.activeAdRenderer pause];
+     [self presentViewController:newViewController animated:YES completion:nil];
 }
 
-- (void)safariViewControllerDidFinish:(SFSafariViewController *)controller {
-    // true[X] - You will need remume the true[X] Ad Renderer after safariViewController
-    if (self.activeAdRenderer) {
-        [self.activeAdRenderer resume];
-    }
-}
+// When using SFSafariViewController for onPopupWebsite
+//- (void)safariViewControllerDidFinish:(SFSafariViewController *)controller {
+//    // true[X] - You will need remume the true[X] Ad Renderer after safariViewController
+//    if (self.activeAdRenderer) {
+//        [self.activeAdRenderer resume];
+//    }
+//}
 
 // MARK: @optional true[X] delegate methods
 // [5]
