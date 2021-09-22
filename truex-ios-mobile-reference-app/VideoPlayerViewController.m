@@ -91,6 +91,14 @@ BOOL _snappingBack = NO;
     self.requiresLinearPlayback = YES;
     
     // [1] - Look for true[X] companions for a given ad
+    /* 
+        Here in the Fake Vmap, in order to simply the logic, 
+        we have the "system" attribute to indicate the ad being a true[X] ad, and the adParameters's vast_config_url as the "url" attribute.    
+        While in the real world, one will have to change the follow logic for their ad stack. 
+        
+        In this VAST example, the "AdSystem" element indicate the ad type, and adParameters exists in the Character Data of the "AdParameters" element.
+        https://qa-get.truex.com/f7e02f55ada3e9d2e7e7f22158ce135f9fba6317/vast?dimension_2=0&amp;stream_position=preroll&amp;stream_id=[stream_id]
+    */
     NSDictionary* currentAdBreak = [self currentAdBreak];
     NSArray* ads = [currentAdBreak objectForKey:@"ads"];
     NSDictionary* firstAd = [ads objectAtIndex:0];
