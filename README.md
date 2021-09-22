@@ -6,7 +6,7 @@ the integration work, so that the same basic ideas can be replicated in a real p
 
 This reference app covers the essential work. It assumes your app already have a working ad manager.
 
-~~For a more detailed integration guide, please refer to: https://github.com/socialvibe/truex-mobile-integrations/~~ (OUTDATED)
+For a more detailed integration guide, please refer to: https://github.com/socialvibe/truex-mobile-integrations/
 
 # Access the true[X] Ad Renderer Library
 
