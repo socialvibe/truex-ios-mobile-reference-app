@@ -1,16 +1,16 @@
 PODS:
-  - TruexAdRenderer-iOS (3.2.2)
+  - TruexAdRenderer-iOS (3.2.4)
 
 DEPENDENCIES:
-  - TruexAdRenderer-iOS (= 3.2.2)
+  - TruexAdRenderer-iOS (= 3.2.4)
 
 SPEC REPOS:
   https://github.com/socialvibe/cocoapod-specs-dev.git:
     - TruexAdRenderer-iOS
 
 SPEC CHECKSUMS:
-  TruexAdRenderer-iOS: 71f02c5c62f88f78661cea78ab21babff6a53178
+  TruexAdRenderer-iOS: 950093eda8fd1854eff779f70825fdc7ccb0cd09
 
-PODFILE CHECKSUM: c4433654686d50fcea40f99dbb5ac433a69bea30
+PODFILE CHECKSUM: 40e9678b401b928405f89cc3fe3fd931fab52ed5
 
 COCOAPODS: 1.9.3
