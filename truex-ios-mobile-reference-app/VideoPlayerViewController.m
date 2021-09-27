@@ -90,7 +90,7 @@ BOOL _snappingBack = NO;
     NSLog(@"Ad Manager: Ad Break Started");
     self.requiresLinearPlayback = YES;
     
-    // [1] - Look for true[X] companions for a given ad
+    // [1] - Look for true[X] ad
     /* 
         Here in the Fake Vmap, in order to simply the logic, 
         we have the "system" attribute to indicate the ad being a true[X] ad, and the adParameters's vast_config_url as the "url" attribute.    
