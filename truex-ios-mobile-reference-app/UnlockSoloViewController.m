@@ -17,8 +17,8 @@
 
 @property (weak, nonatomic) IBOutlet UISwitch *unlocked;
 
-// internal states
-@property NSMutableDictionary* currentPointer;
+// internal states for the fake ad manager
+@property NSMutableDictionary* internalStateCurrentPointer;
 
 @end
 
@@ -27,6 +27,8 @@ BOOL _vastReady = NO;
 
 
 @implementation UnlockSoloViewController
+NSString *const AD_SERVER = @"https://qa-get.truex.com/5075c46a8e5a48a206318d4ecfb5cc70101e0bcf/vast/solo?dimension_2=1&stream_position=midroll&stream_id=[stream_id]&network_user_id=[user_id]";
+
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -44,7 +46,7 @@ BOOL _vastReady = NO;
 - (void)viewDidAppear:(BOOL)animated {
     // Helper function to fetch ad to vastDictionary
     // This should be pointing to your ad server, where a true[X] ad is booked.
-    [self fetchAd:@"https://qa-get.truex.com/5075c46a8e5a48a206318d4ecfb5cc70101e0bcf/vast/solo?dimension_2=1&stream_position=midroll&stream_id=[stream_id]&network_user_id=[user_id]"];
+    [self fetchAd:AD_SERVER];
 }
 
 - (void)viewDidDisappear:(BOOL)animated {
@@ -65,14 +67,16 @@ BOOL _vastReady = NO;
     // [1] - Look for true[X] in ads
     // Here we use a fake ad manager, which parse the VAST XML directly into a dictionary.
     @try {
-        // Just checking the 1st ad here to simplify the flow.
+        // Just checking the 1st ad here to simplify the flow in this example
         NSMutableDictionary* currentAd = self.vastDictionary[@"Ad"][0][@"InLine"][0];
+        
         BOOL isTruexAd = [self isTruexAd: currentAd];
         if (isTruexAd) {
             // [2] - Prepare to enter the engagement
             [self resetActiveAdRenderer];
             
-            // Getting the adParameter from current ad, probably will look different in your Ad Framework.
+            // Getting the adParameter from current ad,
+            // Details probably might look different in your Ad Framework, as in this example we simply translate the VAST into Dictionary
             NSString* adParametersString = currentAd[@"Creatives"][0][@"Creative"][0][@"Linear"][0][@"AdParameters"][0][@"CDATA"];
             NSError *jsonError;
             NSData *adParametersData = [adParametersString dataUsingEncoding:NSUTF8StringEncoding];
@@ -177,17 +181,18 @@ BOOL _vastReady = NO;
     // true[X] - User wants to open an external link in the true[X] ad
 
     NSLog(@"truex: onPopupWebsite: %@", url);
-    // Open URL with the SFSafariViewController
+    // One can pick any of the following options to responses. Either
+    // // 1. Open URL with the SFSafariViewController
     // SFSafariViewController *svc = [[SFSafariViewController alloc] initWithURL:[NSURL URLWithString: url]];
     // svc.delegate = self;
     // svc.modalPresentationStyle = UIModalPresentationOverCurrentContext;
     // [self presentViewController:svc animated:YES completion:nil];
     // [self.activeAdRenderer pause];
     
-    // Or, open the URL directly in Safari
+    // // 2. Or, open the URL directly in Safari
     // [[UIApplication sharedApplication] openURL:[NSURL URLWithString: url] options:@{} completionHandler:nil];
     
-    // Or, open with the existing in-app webview
+    // 3. Or, open with the existing in-app webview
      UIStoryboard* storyBoard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
      WebViewViewController* newViewController = [storyBoard instantiateViewControllerWithIdentifier:@"webviewVC"];
      newViewController.url = [NSURL URLWithString:url];
@@ -211,12 +216,14 @@ BOOL _vastReady = NO;
 
 
 // MARK: - Helper Functions / Fake Ad Framework
+// These are just helper code to make this sample work. Following are not part of the intergration
 - (void)fetchAd:(NSString *)url {
     if (self.vastDictionary != nil) {
         return;
     }
     url = [url stringByReplacingOccurrencesOfString:@"[stream_id]" withString:[[NSUUID UUID] UUIDString]];
-    // replacing user_id with random UUID here for testing, please user the real user ID from the system.
+    // replacing user_id with random UUID here for testing, please use the real user ID from the system.
+    // Usually this will be filled out by your ad server, or you will fill in your internal ID
     url = [url stringByReplacingOccurrencesOfString:@"[user_id]" withString:[[NSUUID UUID] UUIDString]];
     
     // Fetch the xml from server
@@ -229,17 +236,20 @@ BOOL _vastReady = NO;
     [xmlparser setDelegate:self];
     BOOL success = [xmlparser parse];
     if (success) {
-//        // Print vastDictionary as JSON string to help with debug.
-//        NSError *error;
-//        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:self.vastDictionary
-//                                                           options:NSJSONWritingPrettyPrinted && NSJSONWritingSortedKeys
-//                                                             error:&error];
-//        if (!jsonData) {
-//            NSLog(@"Got an error: %@", error);
-//        } else {
-//            NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-//            NSLog(@"vastDictionary: %@", jsonString);
-//        }
+        BOOL DEBUG_VAST_DICTIONARY = NO;
+        // Print vastDictionary as JSON string to help with debug.
+        if (DEBUG_VAST_DICTIONARY) {
+            NSError *error;
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:self.vastDictionary
+                                                               options:NSJSONWritingPrettyPrinted && NSJSONWritingSortedKeys
+                                                                 error:&error];
+            if (!jsonData) {
+                NSLog(@"Cannot print vastDictionary as JSON: %@", error);
+            } else {
+                NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+                NSLog(@"vastDictionary: %@", jsonString);
+            }
+        }
         _vastReady = YES;
         NSLog(@"fetchAd: ready");
     } else {
@@ -247,55 +257,51 @@ BOOL _vastReady = NO;
     }
 }
 
-- (void)parser:(NSXMLParser *)parser didStartElement:(NSString *)elementName namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName attributes:(NSDictionary *)attributeDict
-{
-    NSMutableDictionary* parent = self.currentPointer;
-    self.currentPointer = [attributeDict mutableCopy];
+- (void)parser:(NSXMLParser *)parser didStartElement:(NSString *)elementName namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName attributes:(NSDictionary *)attributeDict {
+    NSMutableDictionary* parent = self.internalStateCurrentPointer;
+    self.internalStateCurrentPointer = [attributeDict mutableCopy];
     
     if (parent) {
-        [self.currentPointer setObject:parent forKey:@"parent"];
+        [self.internalStateCurrentPointer setObject:parent forKey:@"parent"];
         NSMutableArray* siblings = [parent objectForKey:elementName];
         if (!siblings) {
             [parent setObject:[[NSMutableArray alloc] initWithArray:@[]] forKey:elementName];
             siblings = [parent objectForKey:elementName];
         }
-        [siblings addObject:self.currentPointer];
+        [siblings addObject:self.internalStateCurrentPointer];
     }
     
     // setting the root
     if (!self.vastDictionary) {
-        self.vastDictionary = self.currentPointer;
+        self.vastDictionary = self.internalStateCurrentPointer;
     }
 }
 
 - (void)parser:(NSXMLParser *)parser foundCDATA:(NSData *)CDATABlock {
-    if (self.currentPointer) {
-        [self.currentPointer setObject:[[NSString alloc] initWithData:CDATABlock encoding:NSUTF8StringEncoding] forKey:@"CDATA"];
+    if (self.internalStateCurrentPointer) {
+        [self.internalStateCurrentPointer setObject:[[NSString alloc] initWithData:CDATABlock encoding:NSUTF8StringEncoding] forKey:@"CDATA"];
     }
 }
 
 - (void)parser:(NSXMLParser *)parser foundCharacters:(NSString *)string {
-    if (self.currentPointer) {
-        [self.currentPointer setObject:string forKey:@"characters"];
+    if (self.internalStateCurrentPointer) {
+        [self.internalStateCurrentPointer setObject:string forKey:@"characters"];
     }
 }
 
-- (void)parser:(NSXMLParser *)parser didEndElement:(NSString *)elementName namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName
-{
-    if (self.currentPointer) {
-        NSMutableDictionary* parent = [self.currentPointer objectForKey:@"parent"];
-        [self.currentPointer removeObjectForKey:@"parent"];
-        self.currentPointer = parent;
+- (void)parser:(NSXMLParser *)parser didEndElement:(NSString *)elementName namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName {
+    if (self.internalStateCurrentPointer) {
+        NSMutableDictionary* parent = [self.internalStateCurrentPointer objectForKey:@"parent"];
+        [self.internalStateCurrentPointer removeObjectForKey:@"parent"];
+        self.internalStateCurrentPointer = parent;
     }
 }
 
-- (void)parser:(NSXMLParser *)parser parseErrorOccurred:(NSError *)parseError
-{
+- (void)parser:(NSXMLParser *)parser parseErrorOccurred:(NSError *)parseError {
     [self alertWithTitle:@"Error" message:@"Failed to fetch VAST." completion:nil];
 }
 
-- (void)alertWithTitle:(NSString*)title message:(NSString*)message completion:(void (^)(void))completionCallback;
-{
+- (void)alertWithTitle:(NSString*)title message:(NSString*)message completion:(void (^)(void))completionCallback {
     NSLog(@"alertWithTitle: %@: %@", title, message);
     UIAlertController* alert = [UIAlertController alertControllerWithTitle:title
                                    message:message
