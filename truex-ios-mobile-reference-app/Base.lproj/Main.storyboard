@@ -203,17 +203,17 @@ preroll at 0s midroll at 577s (9m37s)</string>
                                 <rect key="frame" x="20" y="74" width="280" height="356"/>
                                 <subviews>
                                     <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" enabled="NO" contentHorizontalAlignment="center" contentVerticalAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="WXC-Wu-PSn">
-                                        <rect key="frame" x="223" y="39.5" width="51" height="31"/>
+                                        <rect key="frame" x="216" y="39.5" width="51" height="31"/>
                                     </switch>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="jGt-Pi-uor">
-                                        <rect key="frame" x="8" y="40" width="133" height="30"/>
+                                        <rect key="frame" x="15" y="40" width="133" height="30"/>
                                         <state key="normal" title="Unlock with true[X]"/>
                                         <connections>
                                             <action selector="unlockWithTruex:" destination="pJm-Kg-bsH" eventType="touchUpInside" id="EVX-o0-dp7"/>
                                         </connections>
                                     </button>
                                     <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="pAd-1U-8r6">
-                                        <rect key="frame" x="0.0" y="78" width="280" height="278"/>
+                                        <rect key="frame" x="10" y="78" width="260" height="278"/>
                                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                         <string key="text">This page is meant to showcase the one stage "solo" tag. On page appear, we will try to download an ad from ad server. When click unlock with true[X] button above, the true[X] Engagement will start. After user finish the ad, the switch will flip to the on position. This state is reset when clicking back and dismissing this page.</string>
                                         <color key="textColor" systemColor="labelColor"/>
@@ -224,11 +224,11 @@ preroll at 0s midroll at 577s (9m37s)</string>
                                 <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                 <constraints>
                                     <constraint firstItem="jGt-Pi-uor" firstAttribute="top" secondItem="eJe-Tm-fdD" secondAttribute="top" constant="40" id="Elo-4p-HCP"/>
-                                    <constraint firstItem="pAd-1U-8r6" firstAttribute="leading" secondItem="eJe-Tm-fdD" secondAttribute="leading" id="G0u-6s-rXL"/>
-                                    <constraint firstItem="jGt-Pi-uor" firstAttribute="leading" secondItem="eJe-Tm-fdD" secondAttribute="leading" constant="8" id="Qpp-0a-s26"/>
+                                    <constraint firstItem="pAd-1U-8r6" firstAttribute="leading" secondItem="eJe-Tm-fdD" secondAttribute="leading" constant="10" id="G0u-6s-rXL"/>
+                                    <constraint firstItem="jGt-Pi-uor" firstAttribute="leading" secondItem="eJe-Tm-fdD" secondAttribute="leading" constant="15" id="Qpp-0a-s26"/>
                                     <constraint firstItem="pAd-1U-8r6" firstAttribute="centerX" secondItem="eJe-Tm-fdD" secondAttribute="centerX" id="a8U-9v-oWm"/>
                                     <constraint firstItem="pAd-1U-8r6" firstAttribute="top" secondItem="jGt-Pi-uor" secondAttribute="bottom" constant="8" symbolic="YES" id="gzo-Gj-26b"/>
-                                    <constraint firstAttribute="trailing" secondItem="WXC-Wu-PSn" secondAttribute="trailing" constant="8" id="p9I-a8-gh2"/>
+                                    <constraint firstAttribute="trailing" secondItem="WXC-Wu-PSn" secondAttribute="trailing" constant="15" id="p9I-a8-gh2"/>
                                     <constraint firstItem="WXC-Wu-PSn" firstAttribute="centerY" secondItem="jGt-Pi-uor" secondAttribute="centerY" id="uAI-Kc-XSF"/>
                                     <constraint firstAttribute="bottom" secondItem="pAd-1U-8r6" secondAttribute="bottom" id="wqn-RL-2ea"/>
                                 </constraints>
