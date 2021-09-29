@@ -470,7 +470,9 @@ BOOL _snappingBack = NO;
        handler:^(UIAlertAction * action) {}];
      
     [alert addAction:defaultAction];
-    [self presentViewController:alert animated:YES completion:completionCallback];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self presentViewController:alert animated:YES completion:completionCallback];
+    });
 }
 
 @end
