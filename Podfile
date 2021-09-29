@@ -1,4 +1,4 @@
-source 'https://github.com/socialvibe/cocoapod-specs-dev.git'
+source 'https://github.com/socialvibe/cocoapod-specs.git'
 
 target 'truex-ios-mobile-reference-app' do
   pod 'TruexAdRenderer-iOS', '3.2.4'
