@@ -17,7 +17,7 @@ One can get the true[X] Ad Renderer either by the
 source 'https://github.com/socialvibe/cocoapod-specs.git'
 
 target 'your-app' do
-    pod 'TruexAdRenderer-iOS', '3.2'
+    pod 'TruexAdRenderer-iOS', '3.3.0'
 end
 ```
 or direct download and have added to your project appropriately.
