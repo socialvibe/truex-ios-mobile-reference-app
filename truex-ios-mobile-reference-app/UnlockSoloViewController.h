@@ -7,12 +7,12 @@
 //
 
 #import "ViewController.h"
-#import <TruexAdRenderer/TruexShared.h>
+#import "InfillionAdManager.h"
 //#import <SafariServices/SafariServices.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface UnlockSoloViewController : ViewController<TruexAdRendererDelegate, NSXMLParserDelegate /*, SFSafariViewControllerDelegate*/>
+@interface UnlockSoloViewController : ViewController<InfillionAdManagerDelegate /*, SFSafariViewControllerDelegate*/>
 
 @end
 

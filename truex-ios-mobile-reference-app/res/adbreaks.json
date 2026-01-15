@@ -1,0 +1,78 @@
+{
+  "streamUrl": "https://ctv.truex.com/assets/reference-app-stream-no-ads-720p.mp4",
+  "streamDuration": 1320,
+  "adBreaks": [
+    {
+      "breakId": "preroll",
+      "timeOffsetMs": "0",
+      "ads": [
+        {
+          "id": "truex-preroll",
+          "adSystem": "trueX",
+          "title": "TrueX Preroll",
+          "description": "https://get.truex.com/72904fe382372efcdcea6314aa1d7a37db6051b9/vast/config?dimension_1=sample-video&dimension_2=0&dimension_3=sample-video&dimension_4=1234&dimension_5=evergreen&stream_position=preroll",
+          "mediaFile": "https://media.truex.com/m/video/truexloadingplaceholder-30s.mp4",
+          "duration": 30
+        },
+        {
+          "id": "idvx-preroll",
+          "adSystem": "IDVx",
+          "title": "IDVx Preroll",
+          "adParameters": {"xtended_view_fill":[],"ads":[{"service_url":"measure.truex.com","idvx":true,"service_params":"bid_info=0-CEYbQettUMk-27YsB4hucTuNsknDrPHUJiCtmiuVRhtyfMgUReLEeF8w5nngY7t8VBMXhyKXGq2w4LCiETieXxbEv5B6zE476HBRw3zoXw73mCm7xqft8aKqodG6VeRXejkS323SV351AneP7R9ounXwvqcYUqya3dnm7TD4x9zihFmBr7tXuXG1zgrz19EMnUZqn9qk97K7Wv1s4D5MCm5VKZq4tWo7yot2Tvf8sF5KimKKyfC1rRdRXHEfMZr5GqWqd8BamTBPbLNjJgn&campaign_id=52088&creative_id=31413&currency_amount=1&env%5B%5D=flash&env%5B%5D=html&impression_signature=9ff81c053b9ae3e88269e2a83e478873628778809d3839038ae1ca791d78de12&impression_timestamp=1763090583.553637&initials=0&internal_referring_source=WRKZeFvBUhYVetN-y4QLZA&ip=71.136.152.59&multivariate%5BFAP-460%5D=oldTT&multivariate%5BNBCU_50_50%5D=control&multivariate%5Bcontainer_ttqq_yesno_button_placement%5D=treatment&multivariate%5Bctv_footer_test%5D=T0&multivariate%5Bctv_footer_test_a744dee4c7908c475fd3920ac6616470c4317e8c%5D=T0&multivariate%5Bctv_footer_test_dbd6f9f154dc39f9fc4888317c6e3c9d74f7c971%5D=T0&multivariate%5Bctv_relevance_enabled%5D=T0&multivariate%5Bctv_xtended_view%5D=T0&multivariate%5Btruex_first_experiment%5D=control&multivariate%5Btvml_cc_test%5D=control&network_user_id=op_20231213_022&placement_hash=132f66121635ac312e42f1eb018081d50d10fe2a&referrer=&session_id=GvpSFt3wjgYaz_uWpNcp9A&user_agent=Mozilla%2F5.0%20%28iPhone%3B%20CPU%20iPhone%20OS%2018_5%20like%20Mac%20OS%20X%29%20AppleWebKit%2F605.1.15%20%28KHTML%2C%20like%20Gecko%29%20Version%2F18.5%20Mobile%2F15E148%20Safari%2F604.1&vault=0-oJFVqFK9YcD-gUbSFitUKApDaoGUjrmvEjknU1oamNo7vVkAUixXuYGY","survey_config_url":"","asset_type":"interactive","pending_true_targeting_requirements":[],"choice_card_images":[],"asset_url":"[studio].js","window_height":580,"name":"Blago - Mobile Android IDVx Test Campaign ","campaign_id":52088,"revenue_amount":"0.0","session_id":"GvpSFt3wjgYaz_uWpNcp9A","request_id":"WRKZeFvBUhYVetN-y4QLZA","currency_amount":1,"id":31413,"image_url":"https://s3.amazonaws.com/media.socialvi.be/assets/17190/gen-124x124.jpg?1362613767","partner_id":216,"window_url":"https://media.truex.com/container/3.x/current/mobile.html#bid_info%3D0-CEYbQettUMk-27YsB4hucTuNsknDrPHUJiCtmiuVRhtyfMgUReLEeF8w5nngY7t8VBMXhyKXGq2w4LCiETieXxbEv5B6zE476HBRw3zoXw73mCm7xqft8aKqodG6VeRXejkS323SV351AneP7R9ounXwvqcYUqya3dnm7TD4x9zihFmBr7tXuXG1zgrz19EMnUZqn9qk97K7Wv1s4D5MCm5VKZq4tWo7yot2Tvf8sF5KimKKyfC1rRdRXHEfMZr5GqWqd8BamTBPbLNjJgn%26campaign_id%3D52088%26creative_id%3D31413%26currency_amount%3D1%26env%255B%255D%3Dflash%26env%255B%255D%3Dhtml%26impression_signature%3D9ff81c053b9ae3e88269e2a83e478873628778809d3839038ae1ca791d78de12%26impression_timestamp%3D1763090583.553637%26initials%3D0%26internal_referring_source%3DWRKZeFvBUhYVetN-y4QLZA%26ip%3D71.136.152.59%26multivariate%255BFAP-460%255D%3DoldTT%26multivariate%255BNBCU_50_50%255D%3Dcontrol%26multivariate%255Bcontainer_ttqq_yesno_button_placement%255D%3Dtreatment%26multivariate%255Bctv_footer_test%255D%3DT0%26multivariate%255Bctv_footer_test_a744dee4c7908c475fd3920ac6616470c4317e8c%255D%3DT0%26multivariate%255Bctv_footer_test_dbd6f9f154dc39f9fc4888317c6e3c9d74f7c971%255D%3DT0%26multivariate%255Bctv_relevance_enabled%255D%3DT0%26multivariate%255Bctv_xtended_view%255D%3DT0%26multivariate%255Btruex_first_experiment%255D%3Dcontrol%26multivariate%255Btvml_cc_test%255D%3Dcontrol%26network_user_id%3Dop_20231213_022%26placement_hash%3D132f66121635ac312e42f1eb018081d50d10fe2a%26referrer%3D%26session_id%3DGvpSFt3wjgYaz_uWpNcp9A%26user_agent%3DMozilla%252F5.0%2520%2528iPhone%253B%2520CPU%2520iPhone%2520OS%252018_5%2520like%2520Mac%2520OS%2520X%2529%2520AppleWebKit%252F605.1.15%2520%2528KHTML%252C%2520like%2520Gecko%2529%2520Version%252F18.5%2520Mobile%252F15E148%2520Safari%252F604.1%26vault%3D0-oJFVqFK9YcD-gUbSFitUKApDaoGUjrmvEjknU1oamNo7vVkAUixXuYGY","window_width":960,"variations":{"ctv_xtended_view":"T0","truex_first_experiment":"control","FAP-460":"oldTT","NBCU_50_50":"control","tvml_cc_test":"control","ctv_footer_test":"T0","ctv_footer_test_a744dee4c7908c475fd3920ac6616470c4317e8c":"T0","ctv_footer_test_dbd6f9f154dc39f9fc4888317c6e3c9d74f7c971":"T0","ctv_relevance_enabled":"T0","container_ttqq_yesno_button_placement":"treatment"}}],"user":{"id":"op_20231213_022"},"fillable":true,"tag_type":"choice_card","request_id":"WRKZeFvBUhYVetN-y4QLZA","partner_dimensions":{},"vast_session_id":"jEu939MkPFclVsYqp0pIBw","choice_card_images":[],"ad_free_creative_url":"https://media.truex.com/integration/idvx-mobile/choicecard-idvx-mobile.js","card_configurations":[],"card_creative_url":"https://media.truex.com/integration/idvx-mobile/choicecard-idvx-mobile.js","card_creative_args":{"user_opt_out_capping_enabled": true},"service_url":"measure.truex.com","placement":{"id":"1216","partner_id":"216","identifier_hash":"132f66121635ac312e42f1eb018081d50d10fe2a"}},
+          "mediaFile": "https://qa-media.truex.com/m/video/truexloadingplaceholder-30s.mp4",
+          "duration": 30
+        },
+        {
+          "id": "airline-preroll",
+          "adSystem": "GDFP",
+          "title": "Airline Preroll",
+          "mediaFile": "https://media.truex.com/file_assets/2019-01-30/7fe9da33-6b9e-446d-816d-e1aec51a3173.mp4",
+          "duration": 30
+        },
+        {
+          "id": "pets-preroll",
+          "adSystem": "GDFP",
+          "title": "Pets Preroll",
+          "mediaFile": "https://media.truex.com/file_assets/2019-01-30/742eb926-6ec0-48b4-b1e6-093cee334dd1.mp4",
+          "duration": 30
+        }
+      ]
+    },
+    {
+      "breakId": "midroll-1",
+      "timeOffsetMs": "577000",
+      "ads": [
+        {
+          "id": "truex-midroll",
+          "adSystem": "trueX",
+          "title": "TrueX Interactive Midroll",
+          "description": "https://get.truex.com/72904fe382372efcdcea6314aa1d7a37db6051b9/vast/config?dimension_1=sample-video&dimension_2=1&dimension_3=sample-video&dimension_4=1234&dimension_5=evergreen&stream_position=midroll",
+          "mediaFile": "https://media.truex.com/m/video/truexloadingplaceholder-30s.mp4",
+          "duration": 30
+        },
+        {
+          "id": "idvx-midroll",
+          "adSystem": "IDVx",
+          "title": "IDVx Midroll",
+          "adParameters": {"xtended_view_fill":[],"ads":[{"service_url":"measure.truex.com","idvx":true,"service_params":"bid_info=0-CEYbQettUMk-27YsB4hucTuNsknDrPHUJiCtmiuVRhtyfMgUReLEeF8w5nngY7t8VBMXhyKXGq2w4LCiETieXxbEv5B6zE476HBRw3zoXw73mCm7xqft8aKqodG6VeRXejkS323SV351AneP7R9ounXwvqcYUqya3dnm7TD4x9zihFmBr7tXuXG1zgrz19EMnUZqn9qk97K7Wv1s4D5MCm5VKZq4tWo7yot2Tvf8sF5KimKKyfC1rRdRXHEfMZr5GqWqd8BamTBPbLNjJgn&campaign_id=52088&creative_id=31413&currency_amount=1&env%5B%5D=flash&env%5B%5D=html&impression_signature=9ff81c053b9ae3e88269e2a83e478873628778809d3839038ae1ca791d78de12&impression_timestamp=1763090583.553637&initials=0&internal_referring_source=WRKZeFvBUhYVetN-y4QLZA&ip=71.136.152.59&multivariate%5BFAP-460%5D=oldTT&multivariate%5BNBCU_50_50%5D=control&multivariate%5Bcontainer_ttqq_yesno_button_placement%5D=treatment&multivariate%5Bctv_footer_test%5D=T0&multivariate%5Bctv_footer_test_a744dee4c7908c475fd3920ac6616470c4317e8c%5D=T0&multivariate%5Bctv_footer_test_dbd6f9f154dc39f9fc4888317c6e3c9d74f7c971%5D=T0&multivariate%5Bctv_relevance_enabled%5D=T0&multivariate%5Bctv_xtended_view%5D=T0&multivariate%5Btruex_first_experiment%5D=control&multivariate%5Btvml_cc_test%5D=control&network_user_id=op_20231213_022&placement_hash=132f66121635ac312e42f1eb018081d50d10fe2a&referrer=&session_id=GvpSFt3wjgYaz_uWpNcp9A&user_agent=Mozilla%2F5.0%20%28iPhone%3B%20CPU%20iPhone%20OS%2018_5%20like%20Mac%20OS%20X%29%20AppleWebKit%2F605.1.15%20%28KHTML%2C%20like%20Gecko%29%20Version%2F18.5%20Mobile%2F15E148%20Safari%2F604.1&vault=0-oJFVqFK9YcD-gUbSFitUKApDaoGUjrmvEjknU1oamNo7vVkAUixXuYGY","survey_config_url":"","asset_type":"interactive","pending_true_targeting_requirements":[],"choice_card_images":[],"asset_url":"[studio].js","window_height":580,"name":"Blago - Mobile Android IDVx Test Campaign ","campaign_id":52088,"revenue_amount":"0.0","session_id":"GvpSFt3wjgYaz_uWpNcp9A","request_id":"WRKZeFvBUhYVetN-y4QLZA","currency_amount":1,"id":31413,"image_url":"https://s3.amazonaws.com/media.socialvi.be/assets/17190/gen-124x124.jpg?1362613767","partner_id":216,"window_url":"https://media.truex.com/container/3.x/current/mobile.html#bid_info%3D0-CEYbQettUMk-27YsB4hucTuNsknDrPHUJiCtmiuVRhtyfMgUReLEeF8w5nngY7t8VBMXhyKXGq2w4LCiETieXxbEv5B6zE476HBRw3zoXw73mCm7xqft8aKqodG6VeRXejkS323SV351AneP7R9ounXwvqcYUqya3dnm7TD4x9zihFmBr7tXuXG1zgrz19EMnUZqn9qk97K7Wv1s4D5MCm5VKZq4tWo7yot2Tvf8sF5KimKKyfC1rRdRXHEfMZr5GqWqd8BamTBPbLNjJgn%26campaign_id%3D52088%26creative_id%3D31413%26currency_amount%3D1%26env%255B%255D%3Dflash%26env%255B%255D%3Dhtml%26impression_signature%3D9ff81c053b9ae3e88269e2a83e478873628778809d3839038ae1ca791d78de12%26impression_timestamp%3D1763090583.553637%26initials%3D0%26internal_referring_source%3DWRKZeFvBUhYVetN-y4QLZA%26ip%3D71.136.152.59%26multivariate%255BFAP-460%255D%3DoldTT%26multivariate%255BNBCU_50_50%255D%3Dcontrol%26multivariate%255Bcontainer_ttqq_yesno_button_placement%255D%3Dtreatment%26multivariate%255Bctv_footer_test%255D%3DT0%26multivariate%255Bctv_footer_test_a744dee4c7908c475fd3920ac6616470c4317e8c%255D%3DT0%26multivariate%255Bctv_footer_test_dbd6f9f154dc39f9fc4888317c6e3c9d74f7c971%255D%3DT0%26multivariate%255Bctv_relevance_enabled%255D%3DT0%26multivariate%255Bctv_xtended_view%255D%3DT0%26multivariate%255Btruex_first_experiment%255D%3Dcontrol%26multivariate%255Btvml_cc_test%255D%3Dcontrol%26network_user_id%3Dop_20231213_022%26placement_hash%3D132f66121635ac312e42f1eb018081d50d10fe2a%26referrer%3D%26session_id%3DGvpSFt3wjgYaz_uWpNcp9A%26user_agent%3DMozilla%252F5.0%2520%2528iPhone%253B%2520CPU%2520iPhone%2520OS%252018_5%2520like%2520Mac%2520OS%2520X%2529%2520AppleWebKit%252F605.1.15%2520%2528KHTML%252C%2520like%2520Gecko%2529%2520Version%252F18.5%2520Mobile%252F15E148%2520Safari%252F604.1%26vault%3D0-oJFVqFK9YcD-gUbSFitUKApDaoGUjrmvEjknU1oamNo7vVkAUixXuYGY","window_width":960,"variations":{"ctv_xtended_view":"T0","truex_first_experiment":"control","FAP-460":"oldTT","NBCU_50_50":"control","tvml_cc_test":"control","ctv_footer_test":"T0","ctv_footer_test_a744dee4c7908c475fd3920ac6616470c4317e8c":"T0","ctv_footer_test_dbd6f9f154dc39f9fc4888317c6e3c9d74f7c971":"T0","ctv_relevance_enabled":"T0","container_ttqq_yesno_button_placement":"treatment"}}],"user":{"id":"op_20231213_022"},"fillable":true,"tag_type":"choice_card","request_id":"WRKZeFvBUhYVetN-y4QLZA","partner_dimensions":{},"vast_session_id":"jEu939MkPFclVsYqp0pIBw","choice_card_images":[],"ad_free_creative_url":"https://media.truex.com/integration/idvx-mobile/choicecard-idvx-mobile.js","card_configurations":[],"card_creative_url":"https://media.truex.com/integration/idvx-mobile/choicecard-idvx-mobile.js","card_creative_args":{"user_opt_out_capping_enabled": true},"service_url":"measure.truex.com","placement":{"id":"1216","partner_id":"216","identifier_hash":"132f66121635ac312e42f1eb018081d50d10fe2a"}},
+          "mediaFile": "https://qa-media.truex.com/m/video/truexloadingplaceholder-30s.mp4",
+          "duration": 30
+        },
+        {
+          "id": "airline-midroll",
+          "adSystem": "GDFP",
+          "title": "Airline Midroll",
+          "mediaFile": "https://media.truex.com/file_assets/2019-01-30/7fe9da33-6b9e-446d-816d-e1aec51a3173.mp4",
+          "duration": 30
+        },
+        {
+          "id": "pets-midroll",
+          "adSystem": "GDFP",
+          "title": "Pets Midroll",
+          "mediaFile": "https://media.truex.com/file_assets/2019-01-30/742eb926-6ec0-48b4-b1e6-093cee334dd1.mp4",
+          "duration": 30
+        }
+      ]
+    }
+  ]
+}
