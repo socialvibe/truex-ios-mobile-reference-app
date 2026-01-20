@@ -12,17 +12,27 @@ For a more detailed integration guide, please refer to: https://github.com/socia
 
 # Access the Infillion Ad Renderer Library
 
-One can get the Infillion Ad Renderer either by the
-[non-standard CocoaPods integration](https://guides.cocoapods.org/making/private-cocoapods.html):
-[TrueX CocoaPods](https://github.com/socialvibe/cocoapod-specs)
+The Infillion Ad Renderer can be integrated via Swift Package Manager (recommended) or CocoaPods.
+
+## Swift Package Manager (Recommended)
+
+Add the [TruexAdRenderer-iOS-Swift-Package](https://github.com/socialvibe/TruexAdRenderer-iOS-Swift-Package) repository to your project:
+
+1. In Xcode, go to **File > Add Package Dependencies...**
+2. Enter the repository URL: `https://github.com/socialvibe/TruexAdRenderer-iOS-Swift-Package`
+3. Select version `4.1.0` or later
+
+## CocoaPods
+
+Alternatively, use the [non-standard CocoaPods integration](https://guides.cocoapods.org/making/private-cocoapods.html) with the [TrueX CocoaPods spec repository](https://github.com/socialvibe/cocoapod-specs):
+
 ```
 source 'https://github.com/socialvibe/cocoapod-specs.git'
 
 target 'your-app' do
-    pod 'TruexAdRenderer-iOS', '3.3.0'
+    pod 'TruexAdRenderer-iOS', '4.1.0'
 end
 ```
-or via Swift Package Manager using the [TruexAdRenderer-iOS-Swift-Package](https://github.com/socialvibe/TruexAdRenderer-iOS-Swift-Package) repository.
 
 # Implementation Details
 
