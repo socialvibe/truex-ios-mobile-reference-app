@@ -10,14 +10,16 @@
 //  - Present an interactive choice card where users opt-in to engage with branded content
 //  - When users complete the interaction, they earn an ad credit that skips the entire ad break
 //  - Fires AD_FREE_POD event when credit is earned
-//  - Configuration: Uses VAST config URL (description field)
 //
 //  IDVx Ads:
 //  - Interactive ads that start automatically without requiring opt-in
 //  - Play inline with other ads in the break sequence
 //  - Never earn ad credits - always continue to next ad after completion
 //  - Never fire AD_FREE_POD event
-//  - Configuration: Uses adParameters JSON
+//
+//  Configuration:
+//  - Both ad types use adParameters JSON (extracted from VAST wrapper response)
+//  - Alternatively, TrueX can use a VAST config URL directly (for solo ad experiences)
 //
 //  This class handles event processing from the TruexAdRenderer and notifies the delegate
 //  when the ad experience finishes, indicating whether credit was earned (TrueX only).
@@ -109,10 +111,13 @@ NS_ASSUME_NONNULL_BEGIN
  * Start displaying an Infillion interactive engagement
  *
  * @param baseView The view in which to display the interactive engagement
- * @param vastConfigUrl VAST config URL for TrueX ads (pass for TrueX, nil for IDVx)
- * @param adParameters JSON configuration for IDVx ads (pass for IDVx, nil for TrueX)
+ * @param vastConfigUrl VAST config URL (for TrueX solo ads without VMAP wrapper resolution)
+ * @param adParameters JSON configuration (preferred - for both TrueX and IDVx after wrapper resolution)
  * @param slotType The slot type ("preroll" or "midroll")
  * @param adType TRUEX or IDVX
+ *
+ * @note If adParameters is provided, it takes precedence over vastConfigUrl.
+ *       The unified approach is to resolve VAST wrappers and pass adParameters for both ad types.
  */
 - (void)startAdOnView:(UIView *)baseView
         vastConfigUrl:(nullable NSString *)vastConfigUrl

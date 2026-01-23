@@ -58,7 +58,7 @@ NSString *const SOLO_AD_SERVER = @"https://qa-get.truex.com/5075c46a8e5a48a20631
     // Usually this will be filled out by your ad server, or you will fill in your internal ID
     url = [url stringByReplacingOccurrencesOfString:@"[user_id]" withString:[[NSUUID UUID] UUIDString]];
     self.vastConfigUrl = url;
-    NSLog(@"Prepared VAST config URL: %@", self.vastConfigUrl);
+    NSLog(@"[TrueX] Prepared VAST config URL: %@", self.vastConfigUrl);
 }
 
 - (IBAction)unlockWithTruex:(id)sender {
@@ -80,7 +80,7 @@ NSString *const SOLO_AD_SERVER = @"https://qa-get.truex.com/5075c46a8e5a48a20631
     self.adManager.delegate = self;
 
     // Start as TrueX ad with VAST config URL
-    NSLog(@"Starting TrueX solo ad with URL: %@", self.vastConfigUrl);
+    NSLog(@"[TrueX] Starting TrueX solo ad with URL: %@", self.vastConfigUrl);
     [self.adManager startAdOnView:self.view
                     vastConfigUrl:self.vastConfigUrl
                      adParameters:nil
@@ -123,12 +123,12 @@ NSString *const SOLO_AD_SERVER = @"https://qa-get.truex.com/5075c46a8e5a48a20631
 
 - (void)infillionAdDidStart:(NSString *)campaignName {
     // User has started their ad engagement
-    NSLog(@"Infillion: onAdStarted: %@", campaignName);
+    NSLog(@"[TrueX] onAdStarted: %@", campaignName);
 }
 
 - (void)infillionAdDidComplete:(BOOL)receivedCredit {
     // User has finished the Infillion engagement
-    NSLog(@"Infillion: onAdComplete: receivedCredit=%@", receivedCredit ? @"YES" : @"NO");
+    NSLog(@"[TrueX] onAdComplete: receivedCredit=%@", receivedCredit ? @"YES" : @"NO");
 
     if (receivedCredit) {
         // User earned credit, unlock the content
@@ -140,7 +140,7 @@ NSString *const SOLO_AD_SERVER = @"https://qa-get.truex.com/5075c46a8e5a48a20631
 
 - (void)infillionAdPopupWebsite:(NSString *)url {
     // User wants to open an external link in the Infillion ad
-    NSLog(@"Infillion: onPopupWebsite: %@", url);
+    NSLog(@"[TrueX] onPopupWebsite: %@", url);
 
     // Open with the existing in-app webview
     UIStoryboard* storyBoard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
@@ -159,7 +159,7 @@ NSString *const SOLO_AD_SERVER = @"https://qa-get.truex.com/5075c46a8e5a48a20631
 // MARK: - Helper Functions
 
 - (void)alertWithTitle:(NSString*)title message:(NSString*)message completion:(void (^)(void))completionCallback {
-    NSLog(@"alertWithTitle: %@: %@", title, message);
+    NSLog(@"[TrueX] alertWithTitle: %@: %@", title, message);
     UIAlertController* alert = [UIAlertController alertControllerWithTitle:title
                                    message:message
                                    preferredStyle:UIAlertControllerStyleAlert];

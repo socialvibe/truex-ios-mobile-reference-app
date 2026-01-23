@@ -38,18 +38,15 @@ end
 
 ## Ad Break Configuration
 
-Ad break configuration is maintained in `adbreaks.json`. Key fields:
-* `streamUrl`: URL of the main video content
-* `streamDuration`: total length of the video in seconds
-* `adBreaks`: array of ad break objects, each with:
-  * `breakId`: identifier for the ad break (e.g., "preroll", "midroll-1")
-  * `timeOffsetMs`: when the ad break should trigger in milliseconds
-  * `ads`: array of ad objects, each with:
-    * `adSystem`: ad type ("trueX", "IDVx", or "GDFP")
-    * `description`: VAST config URL for TrueX ads
-    * `adParameters`: JSON configuration for IDVx ads
-    * `mediaFile`: URL for standard video ads
-    * `duration`: length of the ad in seconds
+Ad break configuration is maintained in `vmap.xml` using the standard VMAP/VAST format. The app parses this VMAP to extract:
+* Ad breaks with time offsets
+* For each ad:
+  * `adSystem`: ad type ("trueX", "IDVx", or "GDFP")
+  * `VASTAdTagURI`: wrapper URL for Infillion ads (TrueX and IDVx)
+  * `mediaFile`: URL for standard video ads
+  * `duration`: length of the ad
+
+**Wrapper Resolution**: When an ad break starts, the app resolves all VAST wrapper URLs for Infillion ads to fetch fresh `adParameters` with valid session IDs. This ensures proper pixel firing for both TrueX and IDVx ads.
 
 ## Infillion Interactive Ads
 
@@ -61,7 +58,6 @@ TrueX ads present an **interactive choice card** where users can **opt-in** to e
 **Key characteristics:**
 - **Opt-in via choice card** - User must actively choose to engage
 - **Skips entire ad break** - Successful engagement bypasses all remaining ads in the pod
-- **Configuration**: Uses the `description` field containing a VAST config URL
 
 ### IDVx Ads
 IDVx ads are **interactive ads** that start **automatically without requiring opt-in**. Unlike TrueX ads which require users to opt-in via a choice card, IDVx ads begin playing automatically. While no opt-in is required to start, users can interact with the ad content throughout its duration. IDVx ads **play inline with other ads** in the ad break. After an IDVx ad completes, the next ad in the sequence plays.
@@ -70,20 +66,28 @@ IDVx ads are **interactive ads** that start **automatically without requiring op
 - **Automatic start** - No opt-in required, begins playing automatically
 - **Interactive throughout** - Users can interact with ad content for its duration
 - **Plays inline** - Completes and continues to next ad in the pod
-- **Configuration**: Uses the `adParameters` field containing JSON configuration
+
+### Unified Configuration
+Both TrueX and IDVx ads use the same configuration approach:
+1. VMAP contains `<Wrapper>` elements with `<VASTAdTagURI>` pointing to the ad server
+2. When an ad break starts, wrapper URLs are resolved to fetch `adParameters` JSON
+3. The `adParameters` are passed to `TruexAdRenderer.initWithVastConfigJson:`
+
+This unified approach ensures fresh session IDs for proper pixel tracking.
 
 ## Key Components
 
 * **`InfillionAdManager`** - Wrapper class that manages the `TruexAdRenderer` for both TrueX and IDVx ads
 * **`InfillionAdType`** - Enum defining ad types (TrueX, IDVx, Regular) with helper functions
 * **`VideoPlayerViewController`** - Main view controller that handles video playback and ad break management
+* **`VmapParser`** - Utility class that parses VMAP XML and builds the ad break data structure
 
 # Integration Steps
 
 The following steps are a guideline for the Infillion Ad Renderer integration. This assumes you have setup the Ad Renderer dependency above. The starting/key points referenced in each step can be searched in the code for reference.
 
 ### [1] - Identify Infillion ads in an ad break
-For simplicity, this sample app uses a fake ad manager that reads ad break configuration from a local JSON file (`adbreaks.json`). The important part is determining if a given ad is an Infillion interactive ad (TrueX or IDVx). This can vary depending on how ads are returned by the server. In this example, the JSON has an `adSystem` attribute that indicates the ad type.
+This sample app parses ad break configuration from a bundled VMAP file (`vmap.xml`). The important part is determining if a given ad is an Infillion interactive ad (TrueX or IDVx). This can vary depending on how ads are returned by the server. In this example, the `AdSystem` element in the VAST indicates the ad type.
 
 The `InfillionAdType` helper functions (`InfillionAdTypeFromString`, `IsInfillionAd`) are used to identify and categorize ads.
 
@@ -91,12 +95,11 @@ The `InfillionAdType` helper functions (`InfillionAdTypeFromString`, `IsInfillio
 When an Infillion ad is encountered, the `InfillionAdManager` is used to start the ad:
 
 1. Pause the main video playback
-2. Create an `InfillionAdManager` instance and set its delegate
-3. Call `startAdOnView:vastConfigUrl:adParameters:slotType:adType:` with the appropriate configuration:
-   - For **TrueX ads**: pass the VAST config URL in `vastConfigUrl`
-   - For **IDVx ads**: pass the JSON configuration in `adParameters`
+2. **Resolve VAST wrappers**: Fetch the wrapper URL to get fresh `adParameters` with a valid session ID
+3. Create an `InfillionAdManager` instance and set its delegate
+4. Call `startAdOnView:vastConfigUrl:adParameters:slotType:adType:` with `adParameters` (for both TrueX and IDVx)
 
-The `InfillionAdManager` internally creates a `TruexAdRenderer` and calls the appropriate initialization method based on the ad type.
+The `InfillionAdManager` internally creates a `TruexAdRenderer` using `initWithVastConfigJson:` for the unified configuration approach.
 
 ### [3] - Respond to ad completion
 The `InfillionAdManagerDelegate` protocol provides callbacks for ad events:

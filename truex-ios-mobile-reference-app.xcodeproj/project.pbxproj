@@ -34,7 +34,10 @@
 		2751AAF32702396100575375 /* vast_solo.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2751AAF22702396100575375 /* vast_solo.xml */; };
 		2751AAF62702491000575375 /* UnlockSoloViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 2751AAF52702491000575375 /* UnlockSoloViewController.m */; };
 		INFILLION00000000000001 /* InfillionAdManager.m in Sources */ = {isa = PBXBuildFile; fileRef = INFILLION00000000000005 /* InfillionAdManager.m */; };
-		INFILLION00000000000002 /* adbreaks.json in Resources */ = {isa = PBXBuildFile; fileRef = INFILLION00000000000006 /* adbreaks.json */; };
+		INFILLION00000000000002 /* vmap.xml in Resources */ = {isa = PBXBuildFile; fileRef = INFILLION00000000000006 /* vmap.xml */; };
+		INFILLION00000000000007 /* VmapParser.m in Sources */ = {isa = PBXBuildFile; fileRef = INFILLION00000000000009 /* VmapParser.m */; };
+		INFILLION0000000000000A /* Ad.m in Sources */ = {isa = PBXBuildFile; fileRef = INFILLION0000000000000C /* Ad.m */; };
+		INFILLION0000000000000D /* AdBreak.m in Sources */ = {isa = PBXBuildFile; fileRef = INFILLION0000000000000F /* AdBreak.m */; };
 		TRUEXSPM000000000000001 /* TruexAdRenderer-iOS in Frameworks */ = {isa = PBXBuildFile; productRef = TRUEXSPM000000000000002 /* TruexAdRenderer-iOS */; };
 /* End PBXBuildFile section */
 
@@ -87,7 +90,13 @@
 		INFILLION00000000000003 /* InfillionAdType.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = InfillionAdType.h; sourceTree = "<group>"; };
 		INFILLION00000000000004 /* InfillionAdManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = InfillionAdManager.h; sourceTree = "<group>"; };
 		INFILLION00000000000005 /* InfillionAdManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = InfillionAdManager.m; sourceTree = "<group>"; };
-		INFILLION00000000000006 /* adbreaks.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = adbreaks.json; sourceTree = "<group>"; };
+		INFILLION00000000000006 /* vmap.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = vmap.xml; sourceTree = "<group>"; };
+		INFILLION00000000000008 /* VmapParser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VmapParser.h; sourceTree = "<group>"; };
+		INFILLION00000000000009 /* VmapParser.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = VmapParser.m; sourceTree = "<group>"; };
+		INFILLION0000000000000B /* Ad.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Ad.h; sourceTree = "<group>"; };
+		INFILLION0000000000000C /* Ad.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Ad.m; sourceTree = "<group>"; };
+		INFILLION0000000000000E /* AdBreak.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AdBreak.h; sourceTree = "<group>"; };
+		INFILLION0000000000000F /* AdBreak.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AdBreak.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -160,6 +169,12 @@
 				INFILLION00000000000003 /* InfillionAdType.h */,
 				INFILLION00000000000004 /* InfillionAdManager.h */,
 				INFILLION00000000000005 /* InfillionAdManager.m */,
+				INFILLION00000000000008 /* VmapParser.h */,
+				INFILLION00000000000009 /* VmapParser.m */,
+				INFILLION0000000000000B /* Ad.h */,
+				INFILLION0000000000000C /* Ad.m */,
+				INFILLION0000000000000E /* AdBreak.h */,
+				INFILLION0000000000000F /* AdBreak.m */,
 			);
 			path = "truex-ios-mobile-reference-app";
 			sourceTree = "<group>";
@@ -189,7 +204,7 @@
 				2706A2AB26A8A69E00395986 /* true-vision-logo_fhd.png */,
 				2706A2AF26A8AC9D00395986 /* play_button_focused_fhd.png */,
 				2751AAF22702396100575375 /* vast_solo.xml */,
-				INFILLION00000000000006 /* adbreaks.json */,
+				INFILLION00000000000006 /* vmap.xml */,
 			);
 			path = res;
 			sourceTree = "<group>";
@@ -310,7 +325,7 @@
 				2706A2B026A8AC9D00395986 /* play_button_focused_fhd.png in Resources */,
 				2751AAF32702396100575375 /* vast_solo.xml in Resources */,
 				2706A2A826A8A66300395986 /* details_flow_bg_fhd_darken.png in Resources */,
-				INFILLION00000000000002 /* adbreaks.json in Resources */,
+				INFILLION00000000000002 /* vmap.xml in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -349,6 +364,9 @@
 				2706A27C26A8A05500395986 /* main.m in Sources */,
 				2706A26E26A8A05300395986 /* SceneDelegate.m in Sources */,
 				INFILLION00000000000001 /* InfillionAdManager.m in Sources */,
+				INFILLION00000000000007 /* VmapParser.m in Sources */,
+				INFILLION0000000000000A /* Ad.m in Sources */,
+				INFILLION0000000000000D /* AdBreak.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

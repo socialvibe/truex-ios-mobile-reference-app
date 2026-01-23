@@ -10,19 +10,60 @@
 #import "WebViewViewController.h"
 #import "InfillionAdManager.h"
 #import "InfillionAdType.h"
+#import "VmapParser.h"
+
+// Helper class to parse AdParameters from VAST XML response
+@interface VastAdParametersParserDelegate : NSObject <NSXMLParserDelegate>
+@property (nonatomic, strong) NSString *adParametersJson;
+@property (nonatomic, strong) NSMutableString *currentElementValue;
+@property (nonatomic, assign) BOOL inLinear;
+@end
+
+@implementation VastAdParametersParserDelegate
+
+- (void)parser:(NSXMLParser *)parser didStartElement:(NSString *)elementName
+  namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName
+    attributes:(NSDictionary<NSString *,NSString *> *)attributeDict {
+    self.currentElementValue = [NSMutableString string];
+    if ([elementName isEqualToString:@"Linear"]) {
+        self.inLinear = YES;
+    }
+}
+
+- (void)parser:(NSXMLParser *)parser foundCharacters:(NSString *)string {
+    [self.currentElementValue appendString:string];
+}
+
+- (void)parser:(NSXMLParser *)parser foundCDATA:(NSData *)CDATABlock {
+    NSString *cdataString = [[NSString alloc] initWithData:CDATABlock encoding:NSUTF8StringEncoding];
+    if (cdataString) {
+        [self.currentElementValue appendString:cdataString];
+    }
+}
+
+- (void)parser:(NSXMLParser *)parser didEndElement:(NSString *)elementName
+  namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName {
+    if ([elementName isEqualToString:@"Linear"]) {
+        self.inLinear = NO;
+    } else if ([elementName isEqualToString:@"AdParameters"] && self.inLinear) {
+        NSString *value = [self.currentElementValue stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if (value.length > 0 && !self.adParametersJson) {
+            self.adParametersJson = value;
+        }
+    }
+}
+
+@end
 
 @interface VideoPlayerViewController ()
 
 @property (nonatomic, strong) InfillionAdManager *adManager;
 @property (nonatomic, strong) UIActivityIndicatorView *loadingIndicator;
-@property (nonatomic, strong) NSMutableDictionary *videoMap;
+@property (nonatomic, strong) VideoMap *videoMap;
 @property (nonatomic, strong) AVPlayerItem *contentPlayerItem;
 
 // Ad break state
 @property (nonatomic, assign) BOOL inAdBreak;
-@property (nonatomic, assign) int adBreakIndex;
-@property (nonatomic, assign) int currentAdIndexInBreak;
-@property (nonatomic, assign) Float64 resumeTime;
 @property (nonatomic, assign) BOOL snappingBack;
 @property (nonatomic, assign) Float64 adBreakPausePosition;
 
@@ -35,8 +76,6 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-
-    self.resumeTime = -1;
 
     [NSNotificationCenter.defaultCenter addObserver:self
                                            selector:@selector(pause)
@@ -68,9 +107,9 @@
 
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
-    NSLog(@"DEBUG: viewDidAppear START - timestamp: %f", CACurrentMediaTime());
-    [self loadAdBreaksFromJSON];
-    NSLog(@"DEBUG: viewDidAppear END - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] viewDidAppear START - timestamp: %f", CACurrentMediaTime());
+    [self loadAdBreaksFromVMAP];
+    NSLog(@"[TrueX] viewDidAppear END - timestamp: %f", CACurrentMediaTime());
 }
 
 - (void)viewDidDisappear:(BOOL)animated {
@@ -121,58 +160,167 @@
 
 // MARK: - Fake Ad Manager's Video Life Cycle Callbacks
 - (void)videoStarted {
-    NSLog(@"Ad Manager: Video Started");
+    NSLog(@"[TrueX] Video Started");
 }
 
 - (void)videoEnded {
-    NSLog(@"Ad Manager: Video Ended");
+    NSLog(@"[TrueX] Video Ended");
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 - (void)adBreakStarted {
-    NSLog(@"DEBUG: adBreakStarted START - timestamp: %f", CACurrentMediaTime());
-    NSLog(@"Ad Manager: Ad Break Started");
+    NSLog(@"[TrueX] adBreakStarted START - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] Ad Break Started");
     self.requiresLinearPlayback = YES;
 
     // Store current position to resume from after all ads complete
     self.adBreakPausePosition = CMTimeGetSeconds(self.player.currentTime);
-    NSLog(@"DEBUG: Storing pause position: %f - timestamp: %f", self.adBreakPausePosition, CACurrentMediaTime());
+    NSLog(@"[TrueX] Storing pause position: %f - timestamp: %f", self.adBreakPausePosition, CACurrentMediaTime());
 
     // Reset ad index for new break
-    self.currentAdIndexInBreak = 0;
+    AdBreak *currentAdBreak = [self currentAdBreak];
+    if (currentAdBreak) {
+        currentAdBreak.currentAdIndex = 0;
+    }
 
-    // Start playing ads in sequence (Infillion and standard)
-    [self playNextAdInBreak];
+    // Resolve wrapper URLs for all Infillion ads in this break before playing
+    [self resolveWrappersForCurrentBreakWithCompletion:^{
+        NSLog(@"[TrueX] Wrapper resolution complete, starting ad playback - timestamp: %f", CACurrentMediaTime());
+        [self playNextAdInBreak];
+    }];
 
-    NSLog(@"DEBUG: adBreakStarted END - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] adBreakStarted END - timestamp: %f", CACurrentMediaTime());
+}
+
+// Resolve all wrapper URLs for Infillion ads in the current break
+- (void)resolveWrappersForCurrentBreakWithCompletion:(void (^)(void))completion {
+    AdBreak *currentAdBreak = [self currentAdBreak];
+    if (!currentAdBreak) {
+        completion();
+        return;
+    }
+
+    NSArray<Ad *> *ads = currentAdBreak.ads;
+    if (!ads || ads.count == 0) {
+        completion();
+        return;
+    }
+
+    // Find all Infillion ads with wrapper URLs that need resolution
+    NSMutableArray<Ad *> *adsToResolve = [NSMutableArray array];
+    for (Ad *ad in ads) {
+        if ([ad isInfillionAd] && ad.wrapperUrl && !ad.adParameters) {
+            [adsToResolve addObject:ad];
+        }
+    }
+
+    if (adsToResolve.count == 0) {
+        completion();
+        return;
+    }
+
+    NSLog(@"[TrueX] Resolving %lu wrapper URLs - timestamp: %f", (unsigned long)adsToResolve.count, CACurrentMediaTime());
+
+    // Use dispatch group to wait for all resolutions
+    dispatch_group_t group = dispatch_group_create();
+
+    for (Ad *ad in adsToResolve) {
+        dispatch_group_enter(group);
+        NSString *wrapperUrl = ad.wrapperUrl;
+
+        [self resolveWrapperUrl:wrapperUrl completion:^(NSDictionary *adParameters) {
+            if (adParameters) {
+                ad.adParameters = adParameters;
+                NSLog(@"[TrueX] Resolved wrapper for ad %@ - timestamp: %f", ad.adId, CACurrentMediaTime());
+            } else {
+                NSLog(@"[TrueX] Failed to resolve wrapper for ad %@ - timestamp: %f", ad.adId, CACurrentMediaTime());
+            }
+            dispatch_group_leave(group);
+        }];
+    }
+
+    dispatch_group_notify(group, dispatch_get_main_queue(), ^{
+        completion();
+    });
+}
+
+// Fetch a wrapper URL and extract adParameters from the VAST response
+- (void)resolveWrapperUrl:(NSString *)urlString completion:(void (^)(NSDictionary *adParameters))completion {
+    NSURL *url = [NSURL URLWithString:urlString];
+    if (!url) {
+        NSLog(@"[TrueX] Invalid wrapper URL: %@", urlString);
+        completion(nil);
+        return;
+    }
+
+    NSLog(@"[TrueX] Fetching wrapper URL: %@ - timestamp: %f", urlString, CACurrentMediaTime());
+
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:url
+                                                             completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (error || !data) {
+            NSLog(@"[TrueX] Error fetching wrapper: %@", error);
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completion(nil);
+            });
+            return;
+        }
+
+        // Parse VAST XML to extract AdParameters
+        NSDictionary *adParameters = [self parseAdParametersFromVastData:data];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(adParameters);
+        });
+    }];
+    [task resume];
+}
+
+// Parse AdParameters JSON from VAST XML data
+- (NSDictionary *)parseAdParametersFromVastData:(NSData *)data {
+    NSXMLParser *parser = [[NSXMLParser alloc] initWithData:data];
+
+    // Use a helper class for parsing
+    VastAdParametersParserDelegate *parserDelegate = [[VastAdParametersParserDelegate alloc] init];
+    parser.delegate = parserDelegate;
+
+    if ([parser parse] && parserDelegate.adParametersJson) {
+        NSError *jsonError = nil;
+        NSDictionary *params = [NSJSONSerialization JSONObjectWithData:[parserDelegate.adParametersJson dataUsingEncoding:NSUTF8StringEncoding]
+                                                               options:0
+                                                                 error:&jsonError];
+        if (params && !jsonError) {
+            return params;
+        }
+        NSLog(@"[TrueX] Error parsing AdParameters JSON: %@", jsonError);
+    }
+
+    return nil;
 }
 
 // Play the next ad in the current break
 - (void)playNextAdInBreak {
-    NSLog(@"DEBUG: playNextAdInBreak START - index: %d - timestamp: %f", self.currentAdIndexInBreak, CACurrentMediaTime());
+    AdBreak *currentAdBreak = [self currentAdBreak];
+    Ad *ad = [currentAdBreak currentAd];
 
-    NSDictionary* currentAdBreak = [self currentAdBreak];
-    NSArray* ads = [currentAdBreak objectForKey:@"ads"];
+    NSLog(@"[TrueX] playNextAdInBreak START - index: %d - timestamp: %f", currentAdBreak.currentAdIndex, CACurrentMediaTime());
 
     // Check if there are more ads to play
-    if (self.currentAdIndexInBreak >= ads.count) {
+    if (!ad) {
         // No more ads, resume content
-        NSLog(@"DEBUG: No more ads in break, resuming content - timestamp: %f", CACurrentMediaTime());
+        NSLog(@"[TrueX] No more ads in break, resuming content - timestamp: %f", CACurrentMediaTime());
         [self resumeContentAfterAds];
         return;
     }
 
-    NSDictionary* ad = [ads objectAtIndex:self.currentAdIndexInBreak];
-    NSString* adSystem = [ad objectForKey:@"adSystem"];
-    InfillionAdType adType = InfillionAdTypeFromString(adSystem);
+    InfillionAdType adType = InfillionAdTypeFromString(ad.adSystem);
 
-    NSLog(@"DEBUG: Playing ad at index %d - type: %@ (raw: %@) - timestamp: %f",
-          self.currentAdIndexInBreak, InfillionAdTypeToString(adType), adSystem, CACurrentMediaTime());
+    NSLog(@"[TrueX] Playing ad at index %d - type: %@ (raw: %@) - timestamp: %f",
+          currentAdBreak.currentAdIndex, InfillionAdTypeToString(adType), ad.adSystem, CACurrentMediaTime());
 
-    // Increment index for next ad
-    self.currentAdIndexInBreak++;
+    // Advance to next ad for the next call
+    [currentAdBreak nextAd];
 
-    if (IsInfillionAd(adType)) {
+    if ([ad isInfillionAd]) {
         // Play interactive Infillion ad (TrueX or IDVx)
         [self playInfillionAd:ad adType:adType];
     } else {
@@ -180,12 +328,12 @@
         [self playStandardVideoAd:ad];
     }
 
-    NSLog(@"DEBUG: playNextAdInBreak END - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] playNextAdInBreak END - timestamp: %f", CACurrentMediaTime());
 }
 
 // Play an interactive Infillion ad (TrueX or IDVx)
-- (void)playInfillionAd:(NSDictionary*)ad adType:(InfillionAdType)adType {
-    NSLog(@"DEBUG: playInfillionAd START - timestamp: %f", CACurrentMediaTime());
+- (void)playInfillionAd:(Ad *)ad adType:(InfillionAdType)adType {
+    NSLog(@"[TrueX] playInfillionAd START - timestamp: %f", CACurrentMediaTime());
 
     [self.player pause];
     [self resetAdManager];
@@ -196,38 +344,37 @@
     self.adManager = [[InfillionAdManager alloc] init];
     self.adManager.delegate = self;
 
-    // Get the configuration based on ad type
-    NSString *vastConfigUrl = nil;
-    NSDictionary *adParameters = nil;
+    // Get adParameters (resolved from wrapper URL when ad break started)
+    NSDictionary *adParameters = ad.adParameters;
 
-    if (adType == InfillionAdTypeTruex) {
-        vastConfigUrl = [ad objectForKey:@"description"];
-        NSLog(@"Ad Manager: Starting TrueX ad with URL: %@", vastConfigUrl);
-    } else {
-        adParameters = [ad objectForKey:@"adParameters"];
-        NSLog(@"Ad Manager: Starting IDVx ad");
+    if (!adParameters) {
+        NSLog(@"[TrueX] No adParameters for ad %@, skipping", ad.adId);
+        [self playNextAdInBreak];
+        return;
     }
 
-    // Start the Infillion ad
+    NSLog(@"[TrueX] Starting %@ ad with adParameters", InfillionAdTypeToString(adType));
+
+    // Start the Infillion ad (vastConfigUrl is nil, using adParameters)
     [self.adManager startAdOnView:self.view
-                    vastConfigUrl:vastConfigUrl
+                    vastConfigUrl:nil
                      adParameters:adParameters
                          slotType:slotType
                            adType:adType];
 
-    NSLog(@"DEBUG: playInfillionAd END - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] playInfillionAd END - timestamp: %f", CACurrentMediaTime());
 }
 
 // Play a standard video ad by loading its mediaFile URL
-- (void)playStandardVideoAd:(NSDictionary*)ad {
-    NSString* mediaFile = [ad objectForKey:@"mediaFile"];
-    NSString* title = [ad objectForKey:@"title"];
+- (void)playStandardVideoAd:(Ad *)ad {
+    NSString* mediaFile = ad.mediaFile;
+    NSString* title = ad.title;
 
-    NSLog(@"DEBUG: playStandardVideoAd START - title: %@, mediaFile: %@ - timestamp: %f",
+    NSLog(@"[TrueX] playStandardVideoAd START - title: %@, mediaFile: %@ - timestamp: %f",
           title, mediaFile, CACurrentMediaTime());
 
     if (mediaFile == nil) {
-        NSLog(@"DEBUG: No mediaFile for ad, skipping to next - timestamp: %f", CACurrentMediaTime());
+        NSLog(@"[TrueX] No mediaFile for ad, skipping to next - timestamp: %f", CACurrentMediaTime());
         [self playNextAdInBreak];
         return;
     }
@@ -242,9 +389,9 @@
 
     // Create player item for the ad
     NSURL* adUrl = [NSURL URLWithString:mediaFile];
-    NSLog(@"DEBUG: Creating AVPlayerItem with URL: %@ - timestamp: %f", adUrl, CACurrentMediaTime());
+    NSLog(@"[TrueX] Creating AVPlayerItem with URL: %@ - timestamp: %f", adUrl, CACurrentMediaTime());
     AVPlayerItem* adPlayerItem = [AVPlayerItem playerItemWithURL:adUrl];
-    NSLog(@"DEBUG: AVPlayerItem created, status: %ld - timestamp: %f", (long)adPlayerItem.status, CACurrentMediaTime());
+    NSLog(@"[TrueX] AVPlayerItem created, status: %ld - timestamp: %f", (long)adPlayerItem.status, CACurrentMediaTime());
 
     // Listen for when the ad finishes
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -265,13 +412,13 @@
                       context:nil];
 
     // Swap to the ad video and play
-    NSLog(@"DEBUG: Replacing player item - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] Replacing player item - timestamp: %f", CACurrentMediaTime());
     [self.player replaceCurrentItemWithPlayerItem:adPlayerItem];
-    NSLog(@"DEBUG: Player item replaced, calling play - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] Player item replaced, calling play - timestamp: %f", CACurrentMediaTime());
     [self.player play];
-    NSLog(@"DEBUG: Player rate after play: %f - timestamp: %f", self.player.rate, CACurrentMediaTime());
+    NSLog(@"[TrueX] Player rate after play: %f - timestamp: %f", self.player.rate, CACurrentMediaTime());
 
-    NSLog(@"DEBUG: playStandardVideoAd END - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] playStandardVideoAd END - timestamp: %f", CACurrentMediaTime());
 }
 
 // KVO observer for player item status
@@ -281,11 +428,11 @@
                        context:(void *)context {
     if ([keyPath isEqualToString:@"status"]) {
         AVPlayerItem *playerItem = (AVPlayerItem *)object;
-        NSLog(@"DEBUG: AVPlayerItem status changed to: %ld - timestamp: %f", (long)playerItem.status, CACurrentMediaTime());
+        NSLog(@"[TrueX] AVPlayerItem status changed to: %ld - timestamp: %f", (long)playerItem.status, CACurrentMediaTime());
         if (playerItem.status == AVPlayerItemStatusFailed) {
-            NSLog(@"DEBUG: AVPlayerItem FAILED with error: %@ - timestamp: %f", playerItem.error, CACurrentMediaTime());
+            NSLog(@"[TrueX] AVPlayerItem FAILED with error: %@ - timestamp: %f", playerItem.error, CACurrentMediaTime());
         } else if (playerItem.status == AVPlayerItemStatusReadyToPlay) {
-            NSLog(@"DEBUG: AVPlayerItem ready to play - timestamp: %f", CACurrentMediaTime());
+            NSLog(@"[TrueX] AVPlayerItem ready to play - timestamp: %f", CACurrentMediaTime());
         }
         // Remove observer after status is determined
         @try {
@@ -298,7 +445,7 @@
 
 // Called when a standard video ad fails to play
 - (void)standardVideoAdDidFail:(NSNotification*)notification {
-    NSLog(@"DEBUG: standardVideoAdDidFail - error: %@ - timestamp: %f", notification.userInfo, CACurrentMediaTime());
+    NSLog(@"[TrueX] standardVideoAdDidFail - error: %@ - timestamp: %f", notification.userInfo, CACurrentMediaTime());
 
     // Remove observers
     [[NSNotificationCenter defaultCenter] removeObserver:self
@@ -314,7 +461,7 @@
 
 // Called when a standard video ad finishes playing
 - (void)standardVideoAdDidFinish:(NSNotification*)notification {
-    NSLog(@"DEBUG: standardVideoAdDidFinish START - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] standardVideoAdDidFinish START - timestamp: %f", CACurrentMediaTime());
 
     // Remove observers for this notification
     [[NSNotificationCenter defaultCenter] removeObserver:self
@@ -324,20 +471,19 @@
                                                     name:AVPlayerItemFailedToPlayToEndTimeNotification
                                                   object:notification.object];
 
-    NSLog(@"DEBUG: standardVideoAdDidFinish - calling playNextAdInBreak - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] standardVideoAdDidFinish - calling playNextAdInBreak - timestamp: %f", CACurrentMediaTime());
     // Play the next ad in the break
     [self playNextAdInBreak];
 }
 
 - (void)adBreakEnded {
-    NSLog(@"Ad Manager: Ad Break Ended");
+    NSLog(@"[TrueX] Ad Break Ended");
     self.requiresLinearPlayback = NO;
 }
 
-// Resume content playback after all ads complete
+// Resume content playback after ads complete
 - (void)resumeContentAfterAds {
-    NSLog(@"DEBUG: resumeContentAfterAds START - restoring to position %f - timestamp: %f",
-          self.adBreakPausePosition, CACurrentMediaTime());
+    NSLog(@"[TrueX] resumeContentAfterAds START - restoring to position %f - timestamp: %f", self.adBreakPausePosition, CACurrentMediaTime());
 
     // Mark the ad break as completed BEFORE restoring content
     // This prevents the periodic observer from re-triggering the ad break
@@ -347,80 +493,57 @@
     if (self.contentPlayerItem != nil) {
         [self.player replaceCurrentItemWithPlayerItem:self.contentPlayerItem];
 
-        // Seek to the stored pause position
-        CMTime resumeTime = CMTimeMakeWithSeconds(self.adBreakPausePosition, NSEC_PER_SEC);
-        [self.player seekToTime:resumeTime completionHandler:^(BOOL finished) {
-            if (finished) {
-                NSLog(@"DEBUG: Content restored and seeked to %f - timestamp: %f",
-                      self.adBreakPausePosition, CACurrentMediaTime());
-            }
+        // Seek to the resume position, then play
+        CMTime seekTime = CMTimeMakeWithSeconds(self.adBreakPausePosition, NSEC_PER_SEC);
+        __weak typeof(self) weakSelf = self;
+        [self.player seekToTime:seekTime completionHandler:^(BOOL finished) {
+            NSLog(@"[TrueX] Content restored and seeked to %f (finished=%@) - timestamp: %f",
+                  weakSelf.adBreakPausePosition, finished ? @"YES" : @"NO", CACurrentMediaTime());
+            // End the ad break and resume playback after seek completes
+            [weakSelf helperEndAdBreak];
+            [weakSelf.player play];
+            NSLog(@"[TrueX] resumeContentAfterAds - playback resumed - timestamp: %f", CACurrentMediaTime());
         }];
+    } else {
+        // No content player item, just end the ad break
+        NSLog(@"[TrueX] resumeContentAfterAds - no contentPlayerItem, ending ad break - timestamp: %f", CACurrentMediaTime());
+        [self helperEndAdBreak];
     }
 
-    // End the ad break and resume playback
-    [self helperEndAdBreak];
-    [self.player play];
-
-    NSLog(@"DEBUG: resumeContentAfterAds END - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] resumeContentAfterAds END - timestamp: %f", CACurrentMediaTime());
 }
 
 // MARK: - InfillionAdManagerDelegate Methods
 
 - (void)infillionAdDidStart:(NSString *)campaignName {
     // User has started their ad engagement
-    NSLog(@"Infillion: onAdStarted: %@", campaignName);
+    NSLog(@"[TrueX] onAdStarted: %@", campaignName);
 }
 
 - (void)infillionAdDidComplete:(BOOL)receivedCredit {
     // User has finished the Infillion engagement
-    NSLog(@"DEBUG: infillionAdDidComplete START - receivedCredit=%@ - timestamp: %f", receivedCredit ? @"YES" : @"NO", CACurrentMediaTime());
-    NSLog(@"Infillion: onAdComplete: receivedCredit=%@", receivedCredit ? @"YES" : @"NO");
+    NSLog(@"[TrueX] infillionAdDidComplete START - receivedCredit=%@ - timestamp: %f", receivedCredit ? @"YES" : @"NO", CACurrentMediaTime());
+    NSLog(@"[TrueX] onAdComplete: receivedCredit=%@", receivedCredit ? @"YES" : @"NO");
 
     [self resetAdManager];
 
     if (receivedCredit) {
         // TrueX only: User earned credit, skip ALL remaining ads in the break
-        NSLog(@"DEBUG: User earned credit, skipping remaining ads and resuming content - timestamp: %f", CACurrentMediaTime());
+        NSLog(@"[TrueX] User earned credit, skipping remaining ads and resuming content - timestamp: %f", CACurrentMediaTime());
 
-        // Mark the ad break as completed to prevent re-triggering
-        [self markCurrentAdBreakAsCompleted];
-
-        // Determine resume position
-        Float64 resumePosition = self.adBreakPausePosition;
-        if (self.resumeTime != -1) {
-            // Custom snap back logic - user was seeking, return to their original position
-            resumePosition = self.resumeTime;
-            self.resumeTime = -1;
-        }
-
-        // Restore the content player item before seeking
-        if (self.contentPlayerItem != nil) {
-            [self.player replaceCurrentItemWithPlayerItem:self.contentPlayerItem];
-        }
-
-        // Seek to the resume position and play
-        CMTime resumeTime = CMTimeMakeWithSeconds(resumePosition, NSEC_PER_SEC);
-        [self.player seekToTime:resumeTime completionHandler:^(BOOL finished) {
-            if (finished) {
-                NSLog(@"DEBUG: Content resumed at position %f after credit - timestamp: %f",
-                      resumePosition, CACurrentMediaTime());
-            }
-        }];
-
-        [self helperEndAdBreak];
-        [self.player play];
+        [self resumeContentAfterAds];
     } else {
         // No credit received - play the next ad in the break (Infillion or standard)
-        NSLog(@"DEBUG: No credit, playing next ad in break - timestamp: %f", CACurrentMediaTime());
+        NSLog(@"[TrueX] No credit, playing next ad in break - timestamp: %f", CACurrentMediaTime());
         [self playNextAdInBreak];
     }
 
-    NSLog(@"DEBUG: infillionAdDidComplete END - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] infillionAdDidComplete END - timestamp: %f", CACurrentMediaTime());
 }
 
 - (void)infillionAdPopupWebsite:(NSString *)url {
     // User wants to open an external link in the Infillion ad
-    NSLog(@"Infillion: onPopupWebsite: %@", url);
+    NSLog(@"[TrueX] onPopupWebsite: %@", url);
 
     // Open with the existing in-app webview
     UIStoryboard* storyBoard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
@@ -440,184 +563,149 @@
 
 - (void)infillionAdDidOptIn:(NSString *)campaignName adId:(NSInteger)adId {
     // This event is triggered when a user decides opt-in to the interactive ad
-    NSLog(@"Infillion: onOptIn: %@, %li", campaignName, (long)adId);
+    NSLog(@"[TrueX] onOptIn: %@, %li", campaignName, (long)adId);
 }
 
 - (void)infillionAdDidOptOut:(BOOL)userInitiated {
     // User has opted out of the engagement, show standard ads
-    NSLog(@"Infillion: onOptOut: userInitiated=%@", userInitiated ? @"YES" : @"NO");
+    NSLog(@"[TrueX] onOptOut: userInitiated=%@", userInitiated ? @"YES" : @"NO");
 }
 
 - (void)infillionAdSkipCardShown {
     // Displayed a Skip Card
-    NSLog(@"Infillion: onSkipCardShown");
+    NSLog(@"[TrueX] onSkipCardShown");
 }
 
 - (void)infillionAdUserCancel {
     // User backs out of the interactive ad unit after having opted in.
-    NSLog(@"Infillion: onUserCancel");
+    NSLog(@"[TrueX] onUserCancel");
 }
 
 - (void)infillionAdUserCancelStream {
     // User wants to cancel the stream
-    NSLog(@"Infillion: onUserCancelStream");
+    NSLog(@"[TrueX] onUserCancelStream");
 }
 
 // MARK: - Helper Functions / JSON Loading
 
-// Load ad breaks from JSON file
-- (void)loadAdBreaksFromJSON {
-    NSLog(@"DEBUG: loadAdBreaksFromJSON START - timestamp: %f", CACurrentMediaTime());
+// Stream configuration
+static NSString *const STREAM_URL = @"https://ctv.truex.com/assets/reference-app-stream-no-ads-720p.mp4";
+static NSInteger const STREAM_DURATION = 1320;
+
+// Load ad breaks from VMAP file
+- (void)loadAdBreaksFromVMAP {
+    NSLog(@"[TrueX] loadAdBreaksFromVMAP START - timestamp: %f", CACurrentMediaTime());
     if (self.videoMap != nil) {
-        NSLog(@"DEBUG: loadAdBreaksFromJSON EARLY RETURN (videoMap exists) - timestamp: %f", CACurrentMediaTime());
+        NSLog(@"[TrueX] loadAdBreaksFromVMAP EARLY RETURN (videoMap exists) - timestamp: %f", CACurrentMediaTime());
         return;
     }
     self.inAdBreak = NO;
-    self.adBreakIndex = 0;
 
-    // Load the JSON from bundle
-    NSLog(@"DEBUG: Loading JSON from bundle - timestamp: %f", CACurrentMediaTime());
-    NSString *path = [[NSBundle mainBundle] pathForResource:@"adbreaks" ofType:@"json"];
-    NSData *data = [NSData dataWithContentsOfFile:path];
-    NSLog(@"DEBUG: JSON loaded from bundle - timestamp: %f", CACurrentMediaTime());
+    // Parse VMAP from bundle
+    NSLog(@"[TrueX] Parsing VMAP from bundle - timestamp: %f", CACurrentMediaTime());
+    NSError *error = nil;
+    self.videoMap = [VmapParser parseVmapFromBundleResource:@"vmap"
+                                                  streamUrl:STREAM_URL
+                                             streamDuration:STREAM_DURATION
+                                                      error:&error];
 
-    if (!data) {
-        [self alertWithTitle:@"Error" message:@"Failed to load adbreaks.json." completion:nil];
+    if (error || !self.videoMap) {
+        NSLog(@"[TrueX] Error parsing vmap.xml: %@", error);
+        [self alertWithTitle:@"Error" message:@"Failed to parse vmap.xml." completion:nil];
         return;
     }
 
-    NSError *error;
-    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
-
-    if (error) {
-        NSLog(@"Error parsing adbreaks.json: %@", error);
-        [self alertWithTitle:@"Error" message:@"Failed to parse adbreaks.json." completion:nil];
-        return;
-    }
-
-    // Map the JSON to our internal format
-    self.videoMap = [@{} mutableCopy];
-    [self.videoMap setObject:json[@"streamUrl"] forKey:@"url"];
-    [self.videoMap setObject:json[@"streamDuration"] forKey:@"duration"];
-
-    // Convert adBreaks array to our format
-    NSMutableArray *adbreaks = [@[] mutableCopy];
-    for (NSDictionary *adBreak in json[@"adBreaks"]) {
-        NSMutableDictionary *mappedBreak = [@{} mutableCopy];
-
-        // Convert timeOffsetMs (milliseconds string) to timeOffset (seconds int)
-        NSString *timeOffsetMs = adBreak[@"timeOffsetMs"];
-        int timeOffset = [timeOffsetMs intValue] / 1000;
-        [mappedBreak setObject:@(timeOffset) forKey:@"timeOffset"];
-
-        // Calculate total duration from ads
-        int totalDuration = 0;
-        NSMutableArray *ads = [@[] mutableCopy];
-        for (NSDictionary *ad in adBreak[@"ads"]) {
-            NSMutableDictionary *mappedAd = [ad mutableCopy];
-            totalDuration += [ad[@"duration"] intValue];
-            [ads addObject:mappedAd];
-        }
-        [mappedBreak setObject:@(totalDuration) forKey:@"duration"];
-        [mappedBreak setObject:ads forKey:@"ads"];
-        [mappedBreak setObject:adBreak[@"breakId"] forKey:@"id"];
-
-        [adbreaks addObject:mappedBreak];
-    }
-    [self.videoMap setObject:adbreaks forKey:@"adbreaks"];
-
-    NSLog(@"DEBUG: About to call setupStream - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] VMAP parsed successfully - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] About to call setupStream - timestamp: %f", CACurrentMediaTime());
     [self setupStream];
-    NSLog(@"DEBUG: setupStream returned - timestamp: %f", CACurrentMediaTime());
-    // Note: play, videoStarted, and helperStartAdBreak are now called
-    // in setupStream after the asset is ready to play
-    NSLog(@"DEBUG: loadAdBreaksFromJSON END - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] setupStream returned - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] loadAdBreaksFromVMAP END - timestamp: %f", CACurrentMediaTime());
 }
 
 // Set up the video stream
 - (void)setupStream {
-    NSLog(@"DEBUG: setupStream START - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] setupStream START - timestamp: %f", CACurrentMediaTime());
 
     // Show loading indicator while asset loads
     [self.loadingIndicator startAnimating];
 
-    NSURL* url = [NSURL URLWithString:[self.videoMap objectForKey:@"url"]];
-    NSLog(@"DEBUG: Creating AVAsset with URL: %@ - timestamp: %f", url, CACurrentMediaTime());
+    NSURL* url = [NSURL URLWithString:self.videoMap.url];
+    NSLog(@"[TrueX] Creating AVAsset with URL: %@ - timestamp: %f", url, CACurrentMediaTime());
     AVAsset* asset = [AVAsset assetWithURL:url];
-    NSLog(@"DEBUG: AVAsset created - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] AVAsset created - timestamp: %f", CACurrentMediaTime());
     NSArray* assetKeys = @[ @"playable", @"duration" ];
     __weak typeof(self) weakSelf = self;
 
     // Load asset asynchronously before creating the player
-    NSLog(@"DEBUG: Starting async asset load for keys: %@ - timestamp: %f", assetKeys, CACurrentMediaTime());
+    NSLog(@"[TrueX] Starting async asset load for keys: %@ - timestamp: %f", assetKeys, CACurrentMediaTime());
     [asset loadValuesAsynchronouslyForKeys:assetKeys completionHandler:^{
-        NSLog(@"DEBUG: Asset async load COMPLETION HANDLER fired - timestamp: %f", CACurrentMediaTime());
+        NSLog(@"[TrueX] Asset async load COMPLETION HANDLER fired - timestamp: %f", CACurrentMediaTime());
         dispatch_async(dispatch_get_main_queue(), ^{
-            NSLog(@"DEBUG: Inside main queue dispatch - timestamp: %f", CACurrentMediaTime());
+            NSLog(@"[TrueX] Inside main queue dispatch - timestamp: %f", CACurrentMediaTime());
 
             // Hide loading indicator
             [weakSelf.loadingIndicator stopAnimating];
 
             // Check if the view controller is still valid
             if (weakSelf == nil || weakSelf.videoMap == nil) {
-                NSLog(@"DEBUG: Early return - weakSelf or videoMap is nil - timestamp: %f", CACurrentMediaTime());
+                NSLog(@"[TrueX] Early return - weakSelf or videoMap is nil - timestamp: %f", CACurrentMediaTime());
                 return;
             }
 
             // Check the status of the playable key
             NSError *error = nil;
             AVKeyValueStatus status = [asset statusOfValueForKey:@"playable" error:&error];
-            NSLog(@"DEBUG: Playable key status: %ld - timestamp: %f", (long)status, CACurrentMediaTime());
+            NSLog(@"[TrueX] Playable key status: %ld - timestamp: %f", (long)status, CACurrentMediaTime());
 
             if (status == AVKeyValueStatusFailed) {
-                NSLog(@"DEBUG: Failed to load asset: %@ - timestamp: %f", error, CACurrentMediaTime());
+                NSLog(@"[TrueX] Failed to load asset: %@ - timestamp: %f", error, CACurrentMediaTime());
                 [weakSelf alertWithTitle:@"Error" message:@"Failed to load video stream." completion:nil];
                 return;
             }
 
             if (status != AVKeyValueStatusLoaded) {
-                NSLog(@"DEBUG: Asset not loaded, status: %ld - timestamp: %f", (long)status, CACurrentMediaTime());
+                NSLog(@"[TrueX] Asset not loaded, status: %ld - timestamp: %f", (long)status, CACurrentMediaTime());
                 return;
             }
 
             // Asset is ready, create the player
-            NSLog(@"DEBUG: Asset ready, creating AVPlayerItem - timestamp: %f", CACurrentMediaTime());
+            NSLog(@"[TrueX] Asset ready, creating AVPlayerItem - timestamp: %f", CACurrentMediaTime());
             AVPlayerItem* playerItem = [AVPlayerItem playerItemWithAsset:asset automaticallyLoadedAssetKeys:assetKeys];
-            NSLog(@"DEBUG: AVPlayerItem created - timestamp: %f", CACurrentMediaTime());
+            NSLog(@"[TrueX] AVPlayerItem created - timestamp: %f", CACurrentMediaTime());
 
             // Store content playerItem for restoration after ads
             weakSelf.contentPlayerItem = playerItem;
 
             weakSelf.player = [AVPlayer playerWithPlayerItem:playerItem];
-            NSLog(@"DEBUG: AVPlayer created and assigned - timestamp: %f", CACurrentMediaTime());
+            NSLog(@"[TrueX] AVPlayer created and assigned - timestamp: %f", CACurrentMediaTime());
 
             // Show player controls now that asset is ready
             weakSelf.showsPlaybackControls = YES;
 
             // Set up observers and start playback
-            NSLog(@"DEBUG: About to call setupStreamObserversWithAsset - timestamp: %f", CACurrentMediaTime());
+            NSLog(@"[TrueX] About to call setupStreamObserversWithAsset - timestamp: %f", CACurrentMediaTime());
             [weakSelf setupStreamObserversWithAsset:asset];
-            NSLog(@"DEBUG: setupStreamObserversWithAsset returned - timestamp: %f", CACurrentMediaTime());
+            NSLog(@"[TrueX] setupStreamObserversWithAsset returned - timestamp: %f", CACurrentMediaTime());
 
-            NSLog(@"DEBUG: About to call player.play - timestamp: %f", CACurrentMediaTime());
+            NSLog(@"[TrueX] About to call player.play - timestamp: %f", CACurrentMediaTime());
             [weakSelf.player play];
-            NSLog(@"DEBUG: player.play returned - timestamp: %f", CACurrentMediaTime());
+            NSLog(@"[TrueX] player.play returned - timestamp: %f", CACurrentMediaTime());
 
             // The Boundary Time Observer doesn't like 0s, thus I am firing these events manually
-            NSLog(@"DEBUG: About to call videoStarted - timestamp: %f", CACurrentMediaTime());
+            NSLog(@"[TrueX] About to call videoStarted - timestamp: %f", CACurrentMediaTime());
             [weakSelf videoStarted];
-            NSLog(@"DEBUG: videoStarted returned - timestamp: %f", CACurrentMediaTime());
+            NSLog(@"[TrueX] videoStarted returned - timestamp: %f", CACurrentMediaTime());
 
-            NSLog(@"DEBUG: About to call helperStartAdBreak - timestamp: %f", CACurrentMediaTime());
+            NSLog(@"[TrueX] About to call helperStartAdBreak - timestamp: %f", CACurrentMediaTime());
             [weakSelf helperStartAdBreak];
-            NSLog(@"DEBUG: helperStartAdBreak returned - timestamp: %f", CACurrentMediaTime());
+            NSLog(@"[TrueX] helperStartAdBreak returned - timestamp: %f", CACurrentMediaTime());
         });
     }];
-    NSLog(@"DEBUG: setupStream END (async load started) - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] setupStream END (async load started) - timestamp: %f", CACurrentMediaTime());
 }
 
 - (void)setupStreamObserversWithAsset:(AVAsset*)asset {
-    NSLog(@"DEBUG: setupStreamObserversWithAsset START - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] setupStreamObserversWithAsset START - timestamp: %f", CACurrentMediaTime());
     __weak typeof(self) weakSelf = self;
 
     // Initialize array to store observer tokens for cleanup
@@ -626,12 +714,12 @@
 
     // Set Up Video Events
     // Ad Break Observer
-    NSLog(@"DEBUG: Setting up ad break observers - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] Setting up ad break observers - timestamp: %f", CACurrentMediaTime());
     NSMutableArray* adBreakStartTimes = [@[] mutableCopy];
     NSMutableArray* adBreakEndTimes = [@[] mutableCopy];
-    for (NSMutableDictionary* adbreak in [self.videoMap objectForKey:@"adbreaks"]) {
-        int timeOffset = [[adbreak valueForKey:@"timeOffset"] intValue];
-        int duration = [[adbreak valueForKey:@"duration"] intValue];
+    for (AdBreak *adBreak in self.videoMap.adBreaks) {
+        int timeOffset = adBreak.timeOffsetSeconds;
+        int duration = [adBreak duration];
 
         CMTime adbreakStart = CMTimeMake(timeOffset, 1);
         CMTime adbreakEnd = CMTimeMake(timeOffset + duration, 1);
@@ -655,9 +743,9 @@
     [self.timeObservers addObject:observer];
 
     // Video End Event
-    NSLog(@"DEBUG: About to access asset.duration - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] About to access asset.duration - timestamp: %f", CACurrentMediaTime());
     CMTime assetDuration = asset.duration;
-    NSLog(@"DEBUG: asset.duration accessed: %f seconds - timestamp: %f", CMTimeGetSeconds(assetDuration), CACurrentMediaTime());
+    NSLog(@"[TrueX] asset.duration accessed: %f seconds - timestamp: %f", CMTimeGetSeconds(assetDuration), CACurrentMediaTime());
     observer = [self.player addBoundaryTimeObserverForTimes:@[[NSValue valueWithCMTime:assetDuration]]
                                                       queue:dispatch_get_main_queue()
                                                  usingBlock:^{
@@ -665,131 +753,131 @@
                                                  }];
     [self.timeObservers addObject:observer];
 
-    NSLog(@"DEBUG: Adding periodic time observer - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] Adding periodic time observer - timestamp: %f", CACurrentMediaTime());
     observer = [self.player addPeriodicTimeObserverForInterval:CMTimeMakeWithSeconds(0.5, NSEC_PER_SEC)
                                                          queue:dispatch_get_main_queue()
                                                     usingBlock:^(CMTime time) {
         if (weakSelf.player.rate != 0) {
-            NSDictionary* currentAdBreak = [weakSelf currentAdBreak];
-            if (currentAdBreak != nil) {
-                if (!weakSelf.inAdBreak) {
+            if (weakSelf.inAdBreak) {
+                // Check if we've left the ad break region
+                if (!weakSelf.snappingBack) {
+                    AdBreak *currentAdBreak = [weakSelf currentAdBreak];
+                    if (currentAdBreak == nil) {
+                        [weakSelf helperEndAdBreak];
+                    }
+                }
+            } else {
+                // Check if we missed an ad break (user seeked past it)
+                AdBreak *missedAdBreak = [weakSelf firstMissedAdBreak];
+                if (missedAdBreak != nil) {
                     weakSelf.snappingBack = YES;
-                    // Snap Video Position back to the beginning of Ad Break
-                    int timeOffset = [[currentAdBreak valueForKey:@"timeOffset"] intValue];
+                    int timeOffset = missedAdBreak.timeOffsetSeconds;
                     [weakSelf.player seekToTime:CMTimeMake(timeOffset, 1) completionHandler:^(BOOL finished) {
+                        weakSelf.snappingBack = NO;
                         if (finished) {
                             [weakSelf helperStartAdBreak];
                         }
                     }];
-                } else {
-                    weakSelf.snappingBack = NO;
-                }
-            } else {
-                if (weakSelf.inAdBreak) {
-                    if (!weakSelf.snappingBack){
-                        [weakSelf helperEndAdBreak];
-                    }
-                } else {
-                    // snap back to the last ad break if it wasn't played
-                    int currentAdBreakIndex = [weakSelf currentAdBreakIndex];
-                    if (weakSelf.adBreakIndex != currentAdBreakIndex) {
-                        weakSelf.snappingBack = YES;
-                        NSDictionary* adBreakToPlay = [weakSelf adBreakAtIndex:currentAdBreakIndex];
-                        weakSelf.resumeTime = CMTimeGetSeconds(weakSelf.player.currentTime);
-                        int timeOffset = [[adBreakToPlay valueForKey:@"timeOffset"] intValue];
-                        [weakSelf.player seekToTime:CMTimeMake(timeOffset, 1) completionHandler:^(BOOL finished) {
-                            if (finished) {
-                                [weakSelf helperStartAdBreak];
-                            }
-                        }];
-                    }
                 }
             }
         }
     }];
     [self.timeObservers addObject:observer];
-    NSLog(@"DEBUG: setupStreamObserversWithAsset END - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] setupStreamObserversWithAsset END - timestamp: %f", CACurrentMediaTime());
 }
 
-- (NSDictionary*)currentAdBreak {
-    for (NSMutableDictionary* adbreak in [self.videoMap objectForKey:@"adbreaks"]) {
+- (AdBreak *)currentAdBreak {
+    for (AdBreak *adBreak in self.videoMap.adBreaks) {
         // Skip completed ad breaks
-        BOOL completed = [[adbreak valueForKey:@"completed"] boolValue];
-        if (completed) {
+        if (adBreak.completed) {
             continue;
         }
 
         int currentTime = CMTimeGetSeconds(self.player.currentTime);
-        int timeOffset = [[adbreak valueForKey:@"timeOffset"] intValue];
-        int duration = [[adbreak valueForKey:@"duration"] intValue];
-        if ((timeOffset <= currentTime) && (currentTime < (timeOffset+duration))){
-            return [adbreak copy];
+        int timeOffset = adBreak.timeOffsetSeconds;
+        int duration = [adBreak duration];
+        if ((timeOffset <= currentTime) && (currentTime < (timeOffset + duration))) {
+            return adBreak;
         }
     }
     return nil;
 }
 
-- (NSDictionary*)adBreakAtIndex:(int)index {
-    return [[self.videoMap objectForKey:@"adbreaks"] objectAtIndex:(NSUInteger)index];
+// Returns the ad break at current position only if it hasn't been started yet
+- (AdBreak *)currentUnstartedAdBreak {
+    for (AdBreak *adBreak in self.videoMap.adBreaks) {
+        // Skip started or completed ad breaks
+        if (adBreak.started || adBreak.completed) {
+            continue;
+        }
+
+        int currentTime = CMTimeGetSeconds(self.player.currentTime);
+        int timeOffset = adBreak.timeOffsetSeconds;
+        int duration = [adBreak duration];
+        if ((timeOffset <= currentTime) && (currentTime < (timeOffset + duration))) {
+            return adBreak;
+        }
+    }
+    return nil;
+}
+
+// Returns the first ad break that should have played but hasn't started yet
+- (AdBreak *)firstMissedAdBreak {
+    int currentTime = CMTimeGetSeconds(self.player.currentTime);
+    for (AdBreak *adBreak in self.videoMap.adBreaks) {
+        if (adBreak.started || adBreak.completed) {
+            continue;
+        }
+        int timeOffset = adBreak.timeOffsetSeconds;
+        if (timeOffset <= currentTime) {
+            return adBreak;
+        }
+    }
+    return nil;
 }
 
 // Mark the current ad break as completed to prevent re-triggering
 - (void)markCurrentAdBreakAsCompleted {
     // Find the ad break we're currently in based on the stored pause position
-    for (NSMutableDictionary* adbreak in [self.videoMap objectForKey:@"adbreaks"]) {
-        int timeOffset = [[adbreak valueForKey:@"timeOffset"] intValue];
-        int duration = [[adbreak valueForKey:@"duration"] intValue];
+    for (AdBreak *adBreak in self.videoMap.adBreaks) {
+        int timeOffset = adBreak.timeOffsetSeconds;
+        int duration = [adBreak duration];
         // Use the pause position to identify the ad break, since we may have already resumed
         if ((timeOffset <= self.adBreakPausePosition) && (self.adBreakPausePosition < (timeOffset + duration))) {
-            [adbreak setValue:@YES forKey:@"completed"];
-            NSLog(@"DEBUG: Marked ad break at timeOffset %d as completed - timestamp: %f", timeOffset, CACurrentMediaTime());
+            adBreak.completed = YES;
+            NSLog(@"[TrueX] Marked ad break at timeOffset %d as completed - timestamp: %f", timeOffset, CACurrentMediaTime());
             return;
         }
     }
-    // Fallback: if pause position doesn't match, mark by index
-    if (self.adBreakIndex >= 0 && self.adBreakIndex < [[self.videoMap objectForKey:@"adbreaks"] count]) {
-        NSMutableDictionary* adbreak = [[self.videoMap objectForKey:@"adbreaks"] objectAtIndex:self.adBreakIndex];
-        [adbreak setValue:@YES forKey:@"completed"];
-        NSLog(@"DEBUG: Marked ad break at index %d as completed (fallback) - timestamp: %f", self.adBreakIndex, CACurrentMediaTime());
-    }
-}
-
-- (int)currentAdBreakIndex {
-    int index = -1;
-    for (NSMutableDictionary* adbreak in [self.videoMap objectForKey:@"adbreaks"]) {
-        int currentTime = CMTimeGetSeconds(self.player.currentTime);
-        int timeOffset = [[adbreak valueForKey:@"timeOffset"] intValue];
-        if (currentTime < timeOffset){
-            return index;
-        }
-        index++;
-    }
-    return index;
 }
 
 - (void)helperStartAdBreak {
-    NSLog(@"DEBUG: helperStartAdBreak START - self.inAdBreak=%d - timestamp: %f", self.inAdBreak, CACurrentMediaTime());
+    NSLog(@"[TrueX] helperStartAdBreak START - self.inAdBreak=%d - timestamp: %f", self.inAdBreak, CACurrentMediaTime());
     if (!self.inAdBreak) {
-        self.inAdBreak = YES;
-        NSLog(@"DEBUG: helperStartAdBreak calling adBreakStarted - timestamp: %f", CACurrentMediaTime());
-        [self adBreakStarted];
-        NSLog(@"DEBUG: helperStartAdBreak adBreakStarted returned - timestamp: %f", CACurrentMediaTime());
+        // Only start if there's an ad break that hasn't been started yet
+        AdBreak *adBreak = [self currentUnstartedAdBreak];
+        if (adBreak != nil) {
+            // Mark the ad break as started to prevent re-triggering
+            adBreak.started = YES;
+            self.inAdBreak = YES;
+            NSLog(@"[TrueX] helperStartAdBreak calling adBreakStarted - timestamp: %f", CACurrentMediaTime());
+            [self adBreakStarted];
+            NSLog(@"[TrueX] helperStartAdBreak adBreakStarted returned - timestamp: %f", CACurrentMediaTime());
+        }
     }
-    NSLog(@"DEBUG: helperStartAdBreak END - timestamp: %f", CACurrentMediaTime());
+    NSLog(@"[TrueX] helperStartAdBreak END - timestamp: %f", CACurrentMediaTime());
 }
 
 - (void)helperEndAdBreak {
     if (self.inAdBreak) {
         self.inAdBreak = NO;
         [self adBreakEnded];
-        self.adBreakIndex = [self currentAdBreakIndex];
     }
-
 }
 
 - (void)alertWithTitle:(NSString*)title message:(NSString*)message completion:(void (^)(void))completionCallback;
 {
-    NSLog(@"alertWithTitle: %@: %@", title, message);
+    NSLog(@"[TrueX] alertWithTitle: %@: %@", title, message);
     UIAlertController* alert = [UIAlertController alertControllerWithTitle:title
                                    message:message
                                    preferredStyle:UIAlertControllerStyleAlert];
