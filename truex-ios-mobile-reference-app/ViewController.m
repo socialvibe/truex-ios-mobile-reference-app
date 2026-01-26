@@ -22,7 +22,7 @@
     
     NSBundle* truexAdRendererBundle = [NSBundle bundleWithIdentifier:@"com.truex.TruexAdRenderer"];
     NSString* truexAdRendererVersion = [[truexAdRendererBundle infoDictionary] objectForKey:@"CFBundleShortVersionString"];
-    NSLog(@"TruexAdRenderer Version: %@", truexAdRendererVersion);
+    NSLog(@"[TrueX] TruexAdRenderer Version: %@", truexAdRendererVersion);
     [self.infoLabel setText:[NSString stringWithFormat:@"%@\n\nTruexAdRenderer Version: %@", self.infoLabel.text, truexAdRendererVersion]];
     
     // Optional, request ad tracking
@@ -34,7 +34,7 @@
     if (@available(iOS 14.0, *))
     {
         [ATTrackingManager requestTrackingAuthorizationWithCompletionHandler:^(ATTrackingManagerAuthorizationStatus status) {
-            NSLog(@"%@", status == ATTrackingManagerAuthorizationStatusAuthorized? @"ATTrackingManagerAuthorizationStatusAuthorized YES": @"ATTrackingManagerAuthorizationStatusAuthorized NO");
+            NSLog(@"[TrueX] %@", status == ATTrackingManagerAuthorizationStatusAuthorized? @"ATTrackingManagerAuthorizationStatusAuthorized YES": @"ATTrackingManagerAuthorizationStatusAuthorized NO");
         }];
     }
 }

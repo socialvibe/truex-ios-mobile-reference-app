@@ -8,31 +8,27 @@
 
 #import "UnlockSoloViewController.h"
 #import "WebViewViewController.h"
-#import <TruexAdRenderer/TruexAdRenderer.h>
+#import "InfillionAdManager.h"
+#import "InfillionAdType.h"
 
 @interface UnlockSoloViewController ()
 
-@property TruexAdRenderer* activeAdRenderer;
-@property NSMutableDictionary* vastDictionary;
+@property (nonatomic, strong) InfillionAdManager *adManager;
+@property (nonatomic, strong) NSString *vastConfigUrl;
 
 @property (weak, nonatomic) IBOutlet UISwitch *unlocked;
 
-// internal states for the fake ad manager
-@property NSMutableDictionary* internalStateCurrentPointer;
-
 @end
 
-// internal state for the fake ad manager
-BOOL _vastReady = NO;
-
-
 @implementation UnlockSoloViewController
-NSString *const AD_SERVER = @"https://qa-get.truex.com/5075c46a8e5a48a206318d4ecfb5cc70101e0bcf/vast/solo?dimension_2=1&stream_position=midroll&stream_id=[stream_id]&network_user_id=[user_id]";
 
+// VAST config URL for the solo ad experience
+// This should be pointing to your ad server, where a TrueX ad is booked.
+NSString *const SOLO_AD_SERVER = @"https://qa-get.truex.com/5075c46a8e5a48a206318d4ecfb5cc70101e0bcf/vast/solo?dimension_2=1&stream_position=midroll&stream_id=[stream_id]&network_user_id=[user_id]";
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    
+
     [NSNotificationCenter.defaultCenter addObserver:self
                                            selector:@selector(pause)
                                                name:UIApplicationWillResignActiveNotification
@@ -44,13 +40,25 @@ NSString *const AD_SERVER = @"https://qa-get.truex.com/5075c46a8e5a48a206318d4ec
 }
 
 - (void)viewDidAppear:(BOOL)animated {
-    // Helper function to fetch ad to vastDictionary
-    // This should be pointing to your ad server, where a true[X] ad is booked.
-    [self fetchAd:AD_SERVER];
+    // Prepare the VAST config URL with macros replaced
+    [self prepareVastConfigUrl];
 }
 
 - (void)viewDidDisappear:(BOOL)animated {
-    [self resetActiveAdRenderer];
+    [self resetAdManager];
+}
+
+- (void)prepareVastConfigUrl {
+    if (self.vastConfigUrl != nil) {
+        return;
+    }
+    NSString *url = SOLO_AD_SERVER;
+    url = [url stringByReplacingOccurrencesOfString:@"[stream_id]" withString:[[NSUUID UUID] UUIDString]];
+    // Replacing user_id with random UUID here for testing, please use the real user ID from the system.
+    // Usually this will be filled out by your ad server, or you will fill in your internal ID
+    url = [url stringByReplacingOccurrencesOfString:@"[user_id]" withString:[[NSUUID UUID] UUIDString]];
+    self.vastConfigUrl = url;
+    NSLog(@"[TrueX] Prepared VAST config URL: %@", self.vastConfigUrl);
 }
 
 - (IBAction)unlockWithTruex:(id)sender {
@@ -58,258 +66,107 @@ NSString *const AD_SERVER = @"https://qa-get.truex.com/5075c46a8e5a48a206318d4ec
         [self alertWithTitle:@"Unlocked" message:@"Already Unlocked" completion:nil];
         return;
     }
-    
-    if (!_vastReady || !self.vastDictionary) {
-        [self alertWithTitle:@"Not Ready" message:@"Downloading VAST" completion:nil];
+
+    if (!self.vastConfigUrl) {
+        [self alertWithTitle:@"Not Ready" message:@"Preparing ad URL" completion:nil];
         return;
     }
-    
-    // [1] - Look for true[X] in ads
-    // Here we use a fake ad manager, which parse the VAST XML directly into a dictionary.
-    @try {
-        // Just checking the 1st ad here to simplify the flow in this example
-        NSMutableDictionary* currentAd = self.vastDictionary[@"Ad"][0][@"InLine"][0];
-        
-        BOOL isTruexAd = [self isTruexAd: currentAd];
-        if (isTruexAd) {
-            // [2] - Prepare to enter the engagement
-            [self resetActiveAdRenderer];
-            
-            // Getting the adParameter from current ad,
-            // Details probably might look different in your Ad Framework, as in this example we simply translate the VAST into Dictionary
-            NSString* adParametersString = currentAd[@"Creatives"][0][@"Creative"][0][@"Linear"][0][@"AdParameters"][0][@"CDATA"];
-            NSError *jsonError;
-            NSData *adParametersData = [adParametersString dataUsingEncoding:NSUTF8StringEncoding];
-            NSDictionary *adParameters = [NSJSONSerialization JSONObjectWithData:adParametersData
-                                                                         options:NSJSONReadingMutableContainers
-                                                                           error:&jsonError];
-            if (jsonError) {
-                [self alertWithTitle:@"Error" message:@"Failed to parse adParametersData into JSON" completion:nil];
-                return;
-            }
-            
-            self.activeAdRenderer = [[TruexAdRenderer alloc] initWithUrl:@"https://media.truex.com/placeholder.js"
-                                                            adParameters:adParameters
-                                                                slotType:@"midroll"];
-            self.activeAdRenderer.delegate = self;
-            [self.activeAdRenderer start:self.view];
-        } else {
-            [self alertWithTitle:@"Not true[X] ad" message:@"Something went wrong, playing fallback ads." completion:nil];
-        }
-    } @catch(id anException) {
-        [self alertWithTitle:@"Error" message:@"Failed to parse the 1st ad" completion:nil];
-    }
-}
 
-- (BOOL)isTruexAd:(NSMutableDictionary *)currentAd {
-    NSString* adSystem = currentAd[@"AdSystem"][0][@"characters"];
-    return [adSystem isEqualToString:@"trueX"];
+    // Start the TrueX engagement
+    [self resetAdManager];
+
+    // Create the InfillionAdManager
+    self.adManager = [[InfillionAdManager alloc] init];
+    self.adManager.delegate = self;
+
+    // Start as TrueX ad with VAST config URL
+    NSLog(@"[TrueX] Starting TrueX solo ad with URL: %@", self.vastConfigUrl);
+    [self.adManager startAdOnView:self.view
+                    vastConfigUrl:self.vastConfigUrl
+                     adParameters:nil
+                         slotType:@"midroll"
+                           adType:InfillionAdTypeTruex];
 }
 
 - (IBAction)onBackPressed:(id)sender {
-    [self resetActiveAdRenderer];
+    [self resetAdManager];
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 - (BOOL)prefersHomeIndicatorAutoHidden {
-    // true[X] - Hide home indicator during true[X] Ad
-    return (self.activeAdRenderer != nil);
+    // Hide home indicator during Infillion Ad
+    return (self.adManager != nil);
 }
 
 - (BOOL)prefersStatusBarHidden {
-    // true[X] - Hide the status bar during true[X] Ad
-    return (self.activeAdRenderer != nil);
+    // Hide the status bar during Infillion Ad
+    return (self.adManager != nil);
 }
 
 - (void)pause {
-    // true[X] - Besure to pasue and resume the true[X] Ad Renderer
-    [self.activeAdRenderer pause];
+    // Pause the Infillion Ad Renderer
+    [self.adManager pause];
 }
 
 - (void)resume {
-    [self.activeAdRenderer resume];
+    [self.adManager resume];
 }
 
-- (void)resetActiveAdRenderer {
-    if (self.activeAdRenderer) {
-        [self.activeAdRenderer stop];
+- (void)resetAdManager {
+    if (self.adManager) {
+        [self.adManager stop];
     }
-    self.activeAdRenderer = nil;
+    self.adManager = nil;
 }
 
+// MARK: - InfillionAdManagerDelegate Methods
 
-
-// MARK: - TRUEX DELEGATE METHODS
-// [5] - Other delegate method
-- (void)onAdStarted:(NSString*)campaignName {
-    // true[X] - User has started their ad engagement
-    NSLog(@"truex: onAdStarted: %@", campaignName);
+- (void)infillionAdDidStart:(NSString *)campaignName {
+    // User has started their ad engagement
+    NSLog(@"[TrueX] onAdStarted: %@", campaignName);
 }
 
-// [4] - Respond to renderer terminating events
-- (void)onAdCompleted:(NSInteger)timeSpent {
-    // true[X] - User has finished the true[X] engagement, resume the video stream
-    NSLog(@"truex: onAdCompleted: %ld", (long)timeSpent);
-    [self resetActiveAdRenderer];
-}
+- (void)infillionAdDidComplete:(BOOL)receivedCredit {
+    // User has finished the Infillion engagement
+    NSLog(@"[TrueX] onAdComplete: receivedCredit=%@", receivedCredit ? @"YES" : @"NO");
 
-// [4]
-- (void)onAdError:(NSString*)errorMessage {
-    // true[X] - TruexAdRenderer encountered an error presenting the ad, resume with standard ads
-    NSLog(@"truex: onAdError: %@", errorMessage);
-    [self resetActiveAdRenderer];
-    [self alertWithTitle:@"onAdError" message:@"Something went wrong, playing fallback ads." completion:nil];
-}
-
-// [4]
-- (void)onNoAdsAvailable {
-    // true[X] - TruexAdRenderer has no ads ready to present, resume with standard ads
-    NSLog(@"truex: onNoAdsAvailable");
-    [self resetActiveAdRenderer];
-    [self alertWithTitle:@"onNoAdsAvailable" message:@"Something went wrong, playing fallback ads." completion:nil];
-}
-
-// [3] - Respond to onAdFreePod
-- (void)onAdFreePod {
-    // true[X] - User has met engagement requirements, skips past remaining pod ads
-    NSLog(@"truex: onAdFreePod");
-    [self.unlocked setOn:YES];
-}
-
-// [5] - Other delegate method
-- (void)onPopupWebsite:(NSString *)url {
-    // true[X] - User wants to open an external link in the true[X] ad
-
-    NSLog(@"truex: onPopupWebsite: %@", url);
-    // One can pick any of the following options to responses. Either
-    // // 1. Open URL with the SFSafariViewController
-    // SFSafariViewController *svc = [[SFSafariViewController alloc] initWithURL:[NSURL URLWithString: url]];
-    // svc.delegate = self;
-    // svc.modalPresentationStyle = UIModalPresentationOverCurrentContext;
-    // [self presentViewController:svc animated:YES completion:nil];
-    // [self.activeAdRenderer pause];
-    
-    // // 2. Or, open the URL directly in Safari
-    // [[UIApplication sharedApplication] openURL:[NSURL URLWithString: url] options:@{} completionHandler:nil];
-    
-    // 3. Or, open with the existing in-app webview
-     UIStoryboard* storyBoard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
-     WebViewViewController* newViewController = [storyBoard instantiateViewControllerWithIdentifier:@"webviewVC"];
-     newViewController.url = [NSURL URLWithString:url];
-     newViewController.modalPresentationStyle = UIModalPresentationOverCurrentContext;
-     __weak typeof(self) weakSelf = self;
-     newViewController.onDismiss = ^(void) {
-         // true[X] - You will need to pause and remume the true[X] Ad Renderer
-         [weakSelf.activeAdRenderer resume];
-     };
-     [self.activeAdRenderer pause];
-     [self presentViewController:newViewController animated:YES completion:nil];
-}
-
-// When using SFSafariViewController for onPopupWebsite
-//- (void)safariViewControllerDidFinish:(SFSafariViewController *)controller {
-//    // true[X] - You will need remume the true[X] Ad Renderer after safariViewController
-//    if (self.activeAdRenderer) {
-//        [self.activeAdRenderer resume];
-//    }
-//}
-
-
-// MARK: - Helper Functions / Fake Ad Framework
-// These are just helper code to make this sample work. Following are not part of the intergration
-- (void)fetchAd:(NSString *)url {
-    if (self.vastDictionary != nil) {
-        return;
+    if (receivedCredit) {
+        // User earned credit, unlock the content
+        [self.unlocked setOn:YES];
     }
-    url = [url stringByReplacingOccurrencesOfString:@"[stream_id]" withString:[[NSUUID UUID] UUIDString]];
-    // replacing user_id with random UUID here for testing, please use the real user ID from the system.
-    // Usually this will be filled out by your ad server, or you will fill in your internal ID
-    url = [url stringByReplacingOccurrencesOfString:@"[user_id]" withString:[[NSUUID UUID] UUIDString]];
-    
-    // Fetch the xml from server
-    NSXMLParser *xmlparser = [[NSXMLParser alloc] initWithContentsOfURL:[[NSURL alloc] initWithString:url]];
-    
-    // Or use the hardcoded copy
-    // NSData* vastSoloData = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"vast_solo" ofType:@"xml"]];
-    // NSXMLParser *xmlparser = [[NSXMLParser alloc] initWithData:vastSoloData];
-    
-    [xmlparser setDelegate:self];
-    BOOL success = [xmlparser parse];
-    if (success) {
-        BOOL DEBUG_VAST_DICTIONARY = NO;
-        // Print vastDictionary as JSON string to help with debug.
-        if (DEBUG_VAST_DICTIONARY) {
-            NSError *error;
-            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:self.vastDictionary
-                                                               options:NSJSONWritingPrettyPrinted && NSJSONWritingSortedKeys
-                                                                 error:&error];
-            if (!jsonData) {
-                NSLog(@"Cannot print vastDictionary as JSON: %@", error);
-            } else {
-                NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-                NSLog(@"vastDictionary: %@", jsonString);
-            }
-        }
-        _vastReady = YES;
-        NSLog(@"fetchAd: ready");
-    } else {
-        [self alertWithTitle:@"Error" message:@"Failed to fetch vmap." completion:nil];
-    }
+
+    [self resetAdManager];
 }
 
-- (void)parser:(NSXMLParser *)parser didStartElement:(NSString *)elementName namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName attributes:(NSDictionary *)attributeDict {
-    NSMutableDictionary* parent = self.internalStateCurrentPointer;
-    self.internalStateCurrentPointer = [attributeDict mutableCopy];
-    
-    if (parent) {
-        [self.internalStateCurrentPointer setObject:parent forKey:@"parent"];
-        NSMutableArray* siblings = [parent objectForKey:elementName];
-        if (!siblings) {
-            [parent setObject:[[NSMutableArray alloc] initWithArray:@[]] forKey:elementName];
-            siblings = [parent objectForKey:elementName];
-        }
-        [siblings addObject:self.internalStateCurrentPointer];
-    }
-    
-    // setting the root
-    if (!self.vastDictionary) {
-        self.vastDictionary = self.internalStateCurrentPointer;
-    }
+- (void)infillionAdPopupWebsite:(NSString *)url {
+    // User wants to open an external link in the Infillion ad
+    NSLog(@"[TrueX] onPopupWebsite: %@", url);
+
+    // Open with the existing in-app webview
+    UIStoryboard* storyBoard = [UIStoryboard storyboardWithName:@"Main" bundle:nil];
+    WebViewViewController* newViewController = [storyBoard instantiateViewControllerWithIdentifier:@"webviewVC"];
+    newViewController.url = [NSURL URLWithString:url];
+    newViewController.modalPresentationStyle = UIModalPresentationOverCurrentContext;
+    __weak typeof(self) weakSelf = self;
+    newViewController.onDismiss = ^(void) {
+        // Resume the Infillion Ad Renderer
+        [weakSelf.adManager resume];
+    };
+    [self.adManager pause];
+    [self presentViewController:newViewController animated:YES completion:nil];
 }
 
-- (void)parser:(NSXMLParser *)parser foundCDATA:(NSData *)CDATABlock {
-    if (self.internalStateCurrentPointer) {
-        [self.internalStateCurrentPointer setObject:[[NSString alloc] initWithData:CDATABlock encoding:NSUTF8StringEncoding] forKey:@"CDATA"];
-    }
-}
-
-- (void)parser:(NSXMLParser *)parser foundCharacters:(NSString *)string {
-    if (self.internalStateCurrentPointer) {
-        [self.internalStateCurrentPointer setObject:string forKey:@"characters"];
-    }
-}
-
-- (void)parser:(NSXMLParser *)parser didEndElement:(NSString *)elementName namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName {
-    if (self.internalStateCurrentPointer) {
-        NSMutableDictionary* parent = [self.internalStateCurrentPointer objectForKey:@"parent"];
-        [self.internalStateCurrentPointer removeObjectForKey:@"parent"];
-        self.internalStateCurrentPointer = parent;
-    }
-}
-
-- (void)parser:(NSXMLParser *)parser parseErrorOccurred:(NSError *)parseError {
-    [self alertWithTitle:@"Error" message:@"Failed to fetch VAST." completion:nil];
-}
+// MARK: - Helper Functions
 
 - (void)alertWithTitle:(NSString*)title message:(NSString*)message completion:(void (^)(void))completionCallback {
-    NSLog(@"alertWithTitle: %@: %@", title, message);
+    NSLog(@"[TrueX] alertWithTitle: %@: %@", title, message);
     UIAlertController* alert = [UIAlertController alertControllerWithTitle:title
                                    message:message
                                    preferredStyle:UIAlertControllerStyleAlert];
-     
+
     UIAlertAction* defaultAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault
        handler:^(UIAlertAction * action) {}];
-     
+
     [alert addAction:defaultAction];
     dispatch_async(dispatch_get_main_queue(), ^{
         [self presentViewController:alert animated:YES completion:completionCallback];

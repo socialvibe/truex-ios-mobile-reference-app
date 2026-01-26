@@ -8,12 +8,11 @@
 
 #import <UIKit/UIKit.h>
 @import AVKit;
-#import <SafariServices/SafariServices.h>
-#import <TruexAdRenderer/TruexShared.h>
+#import "InfillionAdManager.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface VideoPlayerViewController : AVPlayerViewController<TruexAdRendererDelegate, NSXMLParserDelegate, SFSafariViewControllerDelegate>
+@interface VideoPlayerViewController : AVPlayerViewController<InfillionAdManagerDelegate>
 
 @end
 
